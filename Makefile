@@ -1,7 +1,7 @@
 #
 # Makefile for gemtreewriter package
 #
-BUILD_HOME:=$(shell pwd)/../..
+BUILD_HOME:=$(shell pwd)/../
 
 # ROOT Config
 ROOTCFLAGS=$(shell root-config --cflags)
@@ -18,15 +18,15 @@ LBL=-shared -O2 -m64
 LS=ls -lartF
 
 #Project=gem
-Project=unpacker-localDAQ
-Package=gemtreewriter
+Project=test-beam-unpacker
+Package=.
 LongPackage=gemtreewriter
 ShortPackage=treewriter
 PackageName=treewriter
 
 IncludeDirs = ${ROOTINC}
-IncludeDirs+= $(BUILD_HOME)/$(Project)/$(Package)/include
-IncludeDirs+= ${BUILD_HOME}/${GEM_OS_PROJECT}/gemreadout/include
+IncludeDirs+= $(BUILD_HOME)/$(Project)/include
+#IncludeDirs+= ${BUILD_HOME}/${GEM_OS_PROJECT}/gemreadout/include
 INC=$(IncludeDirs:%=-I%)
 
 SRC=$(BUILD_HOME)/$(Project)/$(Package)/src/common

@@ -53,16 +53,16 @@ class GEMUnpacker
      int n_evt=0;
 
      while (true){
-         //         if ( n_evt >1000 )break;
+         if ( n_evt >1000 )break;
          // read and print FEROL headers
          if (m_isFedKit == "ferol") {
              std::size_t sz = std::fread(&m_word, sizeof(uint64_t), 1, m_file);
              if (sz == 0 ) break;
-             //             printf("%016llX\n", m_word);
+             printf("%016llX\n", m_word);
              std::fread(&m_word, sizeof(uint64_t), 1, m_file);
-             //printf("%016llX\n", m_word);
+             printf("%016llX\n", m_word);
              std::fread(&m_word, sizeof(uint64_t), 1, m_file);
-             //printf("%016llX\n", m_word);
+             printf("%016llX\n", m_word);
              // ferol headers read and printed, now read CDF header
              //std::fread(&m_word, sizeof(uint64_t), 1, m_file);
          } else {
@@ -197,16 +197,17 @@ private:
 int main (int argc, char** argv)
 {
   std::cout << "[GEMUnpacker]: ---> Main()" << std::endl;
-  if (argc<3) 
+  if (argc<4) 
   {
     std::cout << "Please provide input filename and source type" << std::endl;
-    std::cout << "Usage: <path>/unpacker ifile ferol(sdram)" << std::endl;
+    std::cout << "Usage: <path>/unpacker ifile ferol(sdram) ofile" << std::endl;
     return 0;
   }
   std::string ifile   = argv[1];
   std::string isFedKit = argv[2];
+  std::string ifile   = argv[3];
 
-  GEMUnpacker * m_unpacker = new GEMUnpacker(ifile, isFedKit);
+  GEMUnpacker * m_unpacker = new GEMUnpacker(ifile, isFedKit, ofile);
   m_unpacker->unpack();
   delete m_unpacker;
 }
