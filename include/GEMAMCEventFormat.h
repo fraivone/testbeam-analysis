@@ -1,3 +1,5 @@
+#include <cstdio>
+#include <iostream>
 #include <vector>
 //!A class for VFAT data
 class VFATdata 
@@ -17,6 +19,47 @@ class VFATdata
     bool     fisBlockGood;             ///<Shows if block is good (control bits, chip ID and CRC checks)
   
   public:
+
+  union VFATfirst {
+      uint64_t word;
+      // v3 dataformat
+      struct {
+        uint64_t msData1 : 16;  ///<channels from 65to128
+        uint64_t bc : 16;       ///<Bunch Crossing number, 16 bits
+        uint64_t ec : 8;        ///<Event Counter, 8 bits
+        uint64_t header : 8;    ///<normally 0x1E. 0x5E indicates that the VFAT3 internal buffer
+        // is half-full, so it's like a warning
+        uint64_t vc : 1;   /// VFAT CRC Error
+        uint64_t : 7;      // unused
+        uint64_t pos : 8;  // VFAT position on chamber, 5 used in GE11 but more is needed for phase2
+      };
+      // v2 dataformat
+      struct {
+        uint64_t msData1v2 : 16;  ///<channels from 65to128 - placeholder since msData1 reads same info
+        uint64_t chipID : 12;     ///<Chip ID, 12 bits
+        uint64_t b1110 : 4;       ///<1110:4 Control bits, shoud be 1110
+        uint64_t flag : 4;        ///<Control Flags: 4 bits, Hamming Error/AFULL/SEUlogic/SUEI2C
+        uint64_t ecV2 : 8;        ///<Event Counter, 8 bits
+        uint64_t b1100 : 4;       ///<1100:4, Control bits, shoud be 1100
+        uint64_t bcV2 : 12;       ///<Bunch Crossing number, 12 bits
+        uint64_t b1010 : 4;       ///<1010:4 Control bits, shoud be 1010
+      };
+    };
+    union VFATsecond {
+      uint64_t word;
+      struct {
+        uint64_t lsData1 : 16;  ///<channels from 1to64
+        uint64_t msData2 : 48;  ///<channels from 65to128
+      };
+    };
+    union VFATthird {
+      uint64_t word;
+      struct {
+        uint64_t crc : 16;      ///<Check Sum value, 16 bits
+        uint64_t lsData2 : 48;  ///<channels from 1to64
+      };
+    };
+
     //!Empty constructor. Functions used to assign data members.
     VFATdata(){}
     //!Constructor requiring arguments.
@@ -48,10 +91,12 @@ class VFATdata
     //!Read first word from the block.
     void read_fw(uint64_t word)
     {
-      fPos = 0x3f & (word >> 56);
+      fPos = (int)(0x3f & (word >> 56));
+      //std::cout << (0x3f & (word >> 56)) << std::endl;
+      //std::cout << fPos << std::endl;
       fCRCcheck = 0xff & (word >> 48);
       fHeader = 0xff & (word >> 40);
-      fEC = 0xff & (word >> 32);
+      fEC = (uint16_t) (0xff & (word >> 32));
       fBC = 0xffff & (word >> 16);
       fmsData = 0xffff000000000000 & (word << 48);
     }
@@ -70,7 +115,7 @@ class VFATdata
       fcrc = 0xffff & word;
     }
     
-    uint8_t   Pos        (){ return fPos;        }
+    uint16_t   Pos        (){ return fPos;        }
     uint16_t  BC         (){ return fBC;         }
     uint8_t   Header     (){ return fHeader;     }
     uint8_t   EC         (){ return fEC;         }
@@ -159,7 +204,9 @@ class GEBdata
     void setChamberHeader(uint64_t word)
     {
       m_ZeroSup = 0x00ffffff & (word >> 40);        /*!Zero Suppression*/
-      m_InputID = 0b00011111 & (word >> 35);        /*!GLIB Input ID*/
+      m_InputID = (int) (0b00011111 & (word >> 35));        /*!GLIB Input ID*/
+      //std::cout << "chamber header " << word << std::endl; 
+      //std::cout << "word " << word << std::endl; 
       m_Vwh = 0x0fff & (word >> 23);                /*!VFAT word count*/
       m_ErrorC = 0b0001111111111111 & (word >> 10);    /*!Thirteen Flags*/
       for(int i=0; i<13; ++i)
@@ -339,6 +386,8 @@ class AMCEvent
       m_L1A = 0x00ffffff & (word >> 32);  /*!L1A ID */
       m_BX = 0x0fff & (word >> 20);       /*!BX ID */
       m_Dlength = 0x000fffff & word;      /*!Data Length */
+      //std::cout << "L1A_ID " << m_L1A << std::endl;
+      //std::cout << "Data length " << m_Dlength << std::endl;
     }
     
     //!Reads the word for the AMC Header 2
@@ -352,7 +401,8 @@ class AMCEvent
       m_isExtTrig = 0x1 & (word >> 54);
       m_isCurrentPulse = 0x1 & (word >> 53);
       m_CFG_CAL_DAC = 0xff & (word >> 45);
-      m_PULSE_STRETCH = 0x07 & (word >> 42) ;/* 3 bit */
+      m_PULSE_STRETCH = (int) (0x07 & (word >> 42));/* 3 bit */
+      //std::cout << "ps " << (0x07 & (word >> 42)) << std::endl;
       m_Latency = 0x03ff & (word >> 32); //word >> 32;          /*!Run Param 3 */
       m_Onum = word >> 16;            /*!Orbit Number */
       m_BID = word;                   /*!Board ID */
