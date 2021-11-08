@@ -34,13 +34,13 @@
 
 #include "TDataMember.h"
 
+// The generated code does not explicitly qualifies STL entities
+namespace std {} using namespace std;
+
 // Header files passed as explicit arguments
 #include "Event.h"
 
 // Header files passed via #pragma extra_include
-
-// The generated code does not explicitly qualify STL entities
-namespace std {} using namespace std;
 
 namespace ROOT {
    static TClass *VFATdata_Dictionary();
@@ -57,7 +57,7 @@ namespace ROOT {
       ::VFATdata *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::VFATdata));
       static ::ROOT::TGenericClassInfo 
-         instance("VFATdata", "GEMAMCEventFormat.h", 3,
+         instance("VFATdata", "GEMAMCEventFormat.h", 5,
                   typeid(::VFATdata), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &VFATdata_Dictionary, isa_proxy, 4,
                   sizeof(::VFATdata) );
@@ -102,7 +102,7 @@ namespace ROOT {
       ::GEBdata *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::GEBdata));
       static ::ROOT::TGenericClassInfo 
-         instance("GEBdata", "GEMAMCEventFormat.h", 91,
+         instance("GEBdata", "GEMAMCEventFormat.h", 136,
                   typeid(::GEBdata), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &GEBdata_Dictionary, isa_proxy, 4,
                   sizeof(::GEBdata) );
@@ -147,7 +147,7 @@ namespace ROOT {
       ::AMCEvent *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::AMCEvent));
       static ::ROOT::TGenericClassInfo 
-         instance("AMCEvent", "GEMAMCEventFormat.h", 217,
+         instance("AMCEvent", "GEMAMCEventFormat.h", 264,
                   typeid(::AMCEvent), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &AMCEvent_Dictionary, isa_proxy, 4,
                   sizeof(::AMCEvent) );
