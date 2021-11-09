@@ -13,7 +13,9 @@
 #include <TROOT.h>
 #include <TStyle.h>
 #include <TF1.h>
-#include <TGraph.h>
+#include <TGraphErrors.h>
+#include <TFitResult.h>
+#include <TFitResultPtr.h>
 
 #include "Digi.h"
 #include "Cluster.h"
@@ -29,7 +31,7 @@ void interruptHandler(int dummy) {
 int main (int argc, char** argv) {
 
     if (argc<3) {
-      std::cout << "Usage: Tracks ifile ofile" << std::endl;
+      std::cout << "Usage: Tracks ifile outdir" << std::endl;
       return 0;
     }
     std::string ifile   = argv[1];
@@ -47,35 +49,39 @@ int main (int argc, char** argv) {
      
     TTree *rechitTree = (TTree *) rechitFile.Get("rechitTree");
 
-    TFile prophitFile(ofile.c_str(), "RECREATE", "Rechit tree file");
-    TTree prophitTree("prophitTree", "prophitTree");
+    TFile trackFile(ofile.c_str(), "RECREATE", "Track file");
+    TTree trackTree("trackTree", "trackTree");
   
     // rechits 2d variables
     int nrechits2d;
     std::vector<int> *vecRechit2DChamber = new std::vector<int>();
     std::vector<double> *vecRechit2D_X_Center = new std::vector<double>();
     std::vector<double> *vecRechit2D_Y_Center = new std::vector<double>();
-    std::vector<double> *vecRechit2D_X_Size = new std::vector<double>();
-    std::vector<double> *vecRechit2D_Y_Size = new std::vector<double>();
+    std::vector<double> *vecRechit2D_X_Error = new std::vector<double>();
+    std::vector<double> *vecRechit2D_Y_Error = new std::vector<double>();
 
     int chamber;
     Rechit2D rechit2D;
     double rechitX, rechitY;
     double prophitX, prophitY;
+    double trackFitChi2;
+    int trackFitIsValid;
 
     // rechit2D branches
     rechitTree->SetBranchAddress("nrechits2d", &nrechits2d);
     rechitTree->SetBranchAddress("rechit2DChamber", &vecRechit2DChamber);
     rechitTree->SetBranchAddress("rechit2D_X_center", &vecRechit2D_X_Center);
     rechitTree->SetBranchAddress("rechit2D_Y_center", &vecRechit2D_Y_Center);
-    rechitTree->SetBranchAddress("rechit2D_X_size", &vecRechit2D_X_Size);
-    rechitTree->SetBranchAddress("rechit2D_Y_size", &vecRechit2D_Y_Size);
+    rechitTree->SetBranchAddress("rechit2D_X_error", &vecRechit2D_X_Error);
+    rechitTree->SetBranchAddress("rechit2D_Y_error", &vecRechit2D_Y_Error);
 
     // prophit branches
-    prophitTree.Branch("rechitX", &rechitX, "rechitX/D");
-    prophitTree.Branch("rechitY", &rechitY, "rechitY/D");
-    prophitTree.Branch("prophitX", &prophitX, "prophitX/D");
-    prophitTree.Branch("prophitY", &prophitY, "prophitY/D");
+    trackTree.Branch("trackFitIsValid", &trackFitIsValid, "trackFitIsValid/I");
+    trackTree.Branch("trackFitChi2", &trackFitChi2, "trackFitChi2/D");
+    trackTree.Branch("rechitX", &rechitX, "rechitX/D");
+    trackTree.Branch("rechitY", &rechitY, "rechitY/D");
+    trackTree.Branch("prophitX", &prophitX, "prophitX/D");
+    trackTree.Branch("prophitY", &prophitY, "prophitY/D");
 
     // geometry, starting from ge2/1
     double zBari1 = -(697+254+294);
@@ -94,8 +100,8 @@ int main (int argc, char** argv) {
     TF1 trackY("fTrackY", "[0]+[1]*x", zStart, zEnd);
 
     // linear track graph
-    TGraph graphX;
-    TGraph graphY;
+    TGraphErrors graphX;
+    TGraphErrors graphY;
     graphX.SetName("gTrackX");
     graphY.SetName("gTrackY");
 
@@ -116,19 +122,21 @@ int main (int argc, char** argv) {
 
     int nentries = rechitTree->GetEntries();
     int nentriesGolden = 0;
+    int fitGoodCount = 0, fitBadCount = 0;
+    TFitResultPtr fitStatus1, fitStatus2;
 
     std::cout << nentries << " total events" <<  std::endl;
     progressbar bar(nentries);
     signal(SIGINT, interruptHandler);
     for (int nevt=0; (!isInterrupted) && rechitTree->LoadTree(nevt)>=0; ++nevt) {
       if ((max_events>0) && (nevt>max_events)) break;
-      std::cout << nevt << std::endl;
       bar.update();
 
       rechitTree->GetEntry(nevt);
 
       // process only if single rechit per event:
-      if (nrechits2d>4) continue;
+      if (nrechits2d==0 || nrechits2d>4) continue;
+      nentriesGolden++;
 
       trackX.SetParameters(0., 0.);
       trackY.SetParameters(0., 0.);
@@ -138,7 +146,9 @@ int main (int argc, char** argv) {
         chamber = vecRechit2DChamber->at(irechit);
         if (chamber<3) {
           graphX.SetPoint(chamber, zChamber[chamber], vecRechit2D_X_Center->at(irechit));
+          graphX.SetPointError(chamber, 10, vecRechit2D_X_Error->at(irechit));
           graphY.SetPoint(chamber, zChamber[chamber], vecRechit2D_Y_Center->at(irechit));
+          graphY.SetPointError(chamber, 10, vecRechit2D_Y_Error->at(irechit));
         } else if (chamber==3) {
           rechitX = vecRechit2D_X_Center->at(irechit);
           rechitY = vecRechit2D_Y_Center->at(irechit);
@@ -151,20 +161,28 @@ int main (int argc, char** argv) {
         );
       }
 
-      if (nrechits2d==0) continue;
-      
       // fit track and propagate to chamber 3
-      graphX.Fit(&trackX, "Q");
-      graphY.Fit(&trackY, "Q");
-      prophitX = graphX.Eval(zChamber[3]);
-      prophitY = graphY.Eval(zChamber[3]);
-      prophitTree.Fill();
+      fitStatus1 = graphX.Fit(&trackX, "SQ");
+      fitStatus2 = graphY.Fit(&trackY, "SQ");
 
-      nentriesGolden++;
+      trackFitIsValid = fitStatus1->IsValid() && fitStatus2->IsValid();
+      trackFitChi2 = fitStatus1->Chi2() * fitStatus2->Chi2();
+      if (!trackFitIsValid) fitBadCount++;
+      else fitGoodCount++;
+
+      prophitX = trackX.Eval(zChamber[3]);
+      prophitY = trackY.Eval(zChamber[3]);
+
+      trackTree.Fill();
     }
     std::cout << std::endl;
 
     std::cout << "Golden entries " << nentriesGolden << std::endl;
+    std::cout << "Failed fits " << fitBadCount << std::endl;
+    std::cout << "Successful fits " << fitGoodCount << std::endl;
+
+    trackTree.Write();
+    trackFile.Close();
 
     for (int ichamber=0; ichamber<4; ichamber++) {
       profileCanvases[ichamber]->cd();
@@ -177,5 +195,5 @@ int main (int argc, char** argv) {
       );
     }
 
-    rechitFile.Close();
+    std::cout << "Output files written to " << outdir << std::endl;
 }

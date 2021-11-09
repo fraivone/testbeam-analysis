@@ -8,7 +8,7 @@ class Rechit2D {
     public:
 
         double fCenterX, fCenterY;
-        double fSizeX, fSizeY;
+        double fErrorX, fErrorY;
         int fChamber;
 
         Rechit2D() {}
@@ -17,12 +17,12 @@ class Rechit2D {
 
         double getCenterX();
         double getCenterY();
-        double getSizeX();
-        double getSizeY();
+        double getErrorX();
+        double getErrorY();
         int getChamber();
 
         void print() {
-            std::cout << fChamber << "," << fCenterX << "," << fCenterY << "," << fSizeX << "," << fSizeY << std::endl;
+            std::cout << fChamber << "," << fCenterX << "," << fCenterY << "," << fErrorX << "," << fErrorY << std::endl;
         }
 };
 
