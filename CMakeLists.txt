@@ -42,6 +42,9 @@ target_link_libraries(DigiToRechits ${ROOT_LIBRARIES})
 add_executable(Tracks Tracks.cc ${sources} ${headers})
 target_link_libraries(Tracks ${ROOT_LIBRARIES})
 
+add_executable(Analysis Analysis.cc ${sources} ${headers})
+target_link_libraries(Analysis ${ROOT_LIBRARIES})
+
 #----------------------------------------------------------------------------
 # Copy mapping files
 #
@@ -54,3 +57,4 @@ configure_file(mapping/ge21_mapping.csv mapping/ge21_mapping.csv COPYONLY)
 install(TARGETS RawToDigi DESTINATION bin)
 install(TARGETS DigiToRechits DESTINATION bin)
 install(TARGETS Tracks DESTINATION bin)
+install(TARGETS Analysis DESTINATION bin)
