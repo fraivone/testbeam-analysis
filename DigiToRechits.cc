@@ -65,6 +65,8 @@ int main (int argc, char** argv) {
   std::vector<double> vecRechit2D_Y_Center;
   std::vector<double> vecRechit2D_X_Error;
   std::vector<double> vecRechit2D_Y_Error;
+  std::vector<double> vecRechit2D_X_ClusterSize;
+  std::vector<double> vecRechit2D_Y_ClusterSize;
 
     // support variables
   int oh, eta;
@@ -98,6 +100,8 @@ int main (int argc, char** argv) {
   rechitTree.Branch("rechit2D_Y_center", &vecRechit2D_Y_Center);
   rechitTree.Branch("rechit2D_X_error", &vecRechit2D_X_Error);
   rechitTree.Branch("rechit2D_Y_error", &vecRechit2D_Y_Error);
+  rechitTree.Branch("rechit2D_X_clusterSize", &vecRechit2D_X_ClusterSize);
+  rechitTree.Branch("rechit2D_Y_clusterSize", &vecRechit2D_Y_ClusterSize);
 
   int nentries = digiTree->GetEntries();
   std::cout << nentries << " total events" <<  std::endl;
@@ -133,6 +137,8 @@ int main (int argc, char** argv) {
     vecRechit2D_Y_Center.clear();
     vecRechit2D_X_Error.clear();
     vecRechit2D_Y_Error.clear();
+    vecRechit2D_X_ClusterSize.clear();
+    vecRechit2D_Y_ClusterSize.clear();
 
     nclusters = clustersInEvent.size();
     for (int icluster=0; icluster<nclusters; icluster++) {
@@ -163,7 +169,8 @@ int main (int argc, char** argv) {
         vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
         vecRechit2D_Y_Center.push_back(rechit2D.getCenterY());
         vecRechit2D_X_Error.push_back(rechit2D.getErrorX());
-        vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());
+        vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());        vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
+        vecRechit2D_Y_ClusterSize.push_back(rechit2D.getClusterSizeY());
         nrechits2d++;
       }
     }

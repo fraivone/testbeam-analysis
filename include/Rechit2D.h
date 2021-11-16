@@ -9,6 +9,7 @@ class Rechit2D {
 
         double fCenterX, fCenterY;
         double fErrorX, fErrorY;
+        double fClusterSizeX, fClusterSizeY;
         int fChamber;
 
         Rechit2D() {}
@@ -19,6 +20,8 @@ class Rechit2D {
         double getCenterY();
         double getErrorX();
         double getErrorY();
+        double getClusterSizeX();
+        double getClusterSizeY();
         int getChamber();
 
         void print() {

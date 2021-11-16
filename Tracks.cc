@@ -59,10 +59,13 @@ int main (int argc, char** argv) {
     std::vector<double> *vecRechit2D_Y_Center = new std::vector<double>();
     std::vector<double> *vecRechit2D_X_Error = new std::vector<double>();
     std::vector<double> *vecRechit2D_Y_Error = new std::vector<double>();
+    std::vector<double> *vecRechit2D_X_ClusterSize = new std::vector<double>();
+    std::vector<double> *vecRechit2D_Y_ClusterSize = new std::vector<double>();
 
     int chamber;
     Rechit2D rechit2D;
     double rechitX, rechitY;
+    double rechitX_clusterSize, rechitY_clusterSize;
     double prophitX, prophitY;
     double trackFitChi2;
     int trackFitIsValid;
@@ -74,11 +77,15 @@ int main (int argc, char** argv) {
     rechitTree->SetBranchAddress("rechit2D_Y_center", &vecRechit2D_Y_Center);
     rechitTree->SetBranchAddress("rechit2D_X_error", &vecRechit2D_X_Error);
     rechitTree->SetBranchAddress("rechit2D_Y_error", &vecRechit2D_Y_Error);
+    rechitTree->SetBranchAddress("rechit2D_X_clusterSize", &vecRechit2D_X_ClusterSize);
+    rechitTree->SetBranchAddress("rechit2D_Y_clusterSize", &vecRechit2D_Y_ClusterSize);
 
     // prophit branches
     trackTree.Branch("trackFitIsValid", &trackFitIsValid, "trackFitIsValid/I");
     trackTree.Branch("trackFitChi2", &trackFitChi2, "trackFitChi2/D");
     trackTree.Branch("rechitX", &rechitX, "rechitX/D");
+    trackTree.Branch("rechitX", &rechitX_clusterSize, "rechitX_clusterSize/D");
+    trackTree.Branch("rechitY", &rechitY_clusterSize, "rechitY_clusterSize/D");
     trackTree.Branch("rechitY", &rechitY, "rechitY/D");
     trackTree.Branch("prophitX", &prophitX, "prophitX/D");
     trackTree.Branch("prophitY", &prophitY, "prophitY/D");
@@ -152,6 +159,8 @@ int main (int argc, char** argv) {
         } else if (chamber==3) {
           rechitX = vecRechit2D_X_Center->at(irechit);
           rechitY = vecRechit2D_Y_Center->at(irechit);
+          rechitX_clusterSize = vecRechit2D_X_ClusterSize->at(irechit);
+          rechitY_clusterSize = vecRechit2D_Y_ClusterSize->at(irechit);
         }
 
         // fill beam profile:
