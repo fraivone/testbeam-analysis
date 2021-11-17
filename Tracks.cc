@@ -84,9 +84,9 @@ int main (int argc, char** argv) {
     trackTree.Branch("trackFitIsValid", &trackFitIsValid, "trackFitIsValid/I");
     trackTree.Branch("trackFitChi2", &trackFitChi2, "trackFitChi2/D");
     trackTree.Branch("rechitX", &rechitX, "rechitX/D");
-    trackTree.Branch("rechitX", &rechitX_clusterSize, "rechitX_clusterSize/D");
-    trackTree.Branch("rechitY", &rechitY_clusterSize, "rechitY_clusterSize/D");
     trackTree.Branch("rechitY", &rechitY, "rechitY/D");
+    trackTree.Branch("rechitXClusterSize", &rechitX_clusterSize, "rechitX_clusterSize/D");
+    trackTree.Branch("rechitYClusterSize", &rechitY_clusterSize, "rechitY_clusterSize/D");
     trackTree.Branch("prophitX", &prophitX, "prophitX/D");
     trackTree.Branch("prophitY", &prophitY, "prophitY/D");
 
