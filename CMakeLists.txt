@@ -7,28 +7,28 @@ project(unpacker)
 find_package(ROOT REQUIRED)
 include(${ROOT_USE_FILE})
 
-include_directories($ENV{UNPACKER_HOME}/include)
+include_directories($ENV{ANALYSIS_HOME}/include)
 
 set(sources
-    $ENV{UNPACKER_HOME}/src/TestBeamMapping.cc
-    $ENV{UNPACKER_HOME}/src/Rechit2D.cc
-    $ENV{UNPACKER_HOME}/src/Cluster.cc
-    $ENV{UNPACKER_HOME}/src/Digi.cc)
+    $ENV{ANALYSIS_HOME}/src/TestBeamMapping.cc
+    $ENV{ANALYSIS_HOME}/src/Rechit2D.cc
+    $ENV{ANALYSIS_HOME}/src/Cluster.cc
+    $ENV{ANALYSIS_HOME}/src/Digi.cc)
 
-set(header $ENV{UNPACKER_HOME}/include/*.h)
+set(header $ENV{ANALYSIS_HOME}/include/*.h)
 
 #----------------------------------------------------------------------------
 # Locate sources and headers for the unpacker
 # NB: headers are included so they will show up in IDEs
 #
-# file(GLOB headers $ENV{UNPACKER_HOME}/include/Cluster.h)
-# file(GLOB headers $ENV{UNPACKER_HOME}/include/Digi.h)
+# file(GLOB headers $ENV{ANALYSIS_HOME}/include/Cluster.h)
+# file(GLOB headers $ENV{ANALYSIS_HOME}/include/Digi.h)
 
-# file(GLOB headers $ENV{UNPACKER_HOME}/include/Event.h)
-# file(GLOB headers $ENV{UNPACKER_HOME}/include/GEMAMCEventFormat.h)
-# file(GLOB sources $ENV{UNPACKER_HOME}/src/TestBeamMapping.cc)
-# file(GLOB sources $ENV{UNPACKER_HOME}/src/Cluster.cc)
-# file(GLOB sources $ENV{UNPACKER_HOME}/src/Digi.cc)
+# file(GLOB headers $ENV{ANALYSIS_HOME}/include/Event.h)
+# file(GLOB headers $ENV{ANALYSIS_HOME}/include/GEMAMCEventFormat.h)
+# file(GLOB sources $ENV{ANALYSIS_HOME}/src/TestBeamMapping.cc)
+# file(GLOB sources $ENV{ANALYSIS_HOME}/src/Cluster.cc)
+# file(GLOB sources $ENV{ANALYSIS_HOME}/src/Digi.cc)
 
 #----------------------------------------------------------------------------
 # Add the executable
@@ -41,6 +41,9 @@ target_link_libraries(DigiToRechits ${ROOT_LIBRARIES})
 
 add_executable(Tracks Tracks.cc ${sources} ${headers})
 target_link_libraries(Tracks ${ROOT_LIBRARIES})
+
+add_executable(Alignment Alignment.cc ${sources} ${headers})
+target_link_libraries(Alignment ${ROOT_LIBRARIES})
 
 add_executable(Analysis Analysis.cc ${sources} ${headers})
 target_link_libraries(Analysis ${ROOT_LIBRARIES})
