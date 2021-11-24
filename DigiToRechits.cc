@@ -169,7 +169,8 @@ int main (int argc, char** argv) {
         vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
         vecRechit2D_Y_Center.push_back(rechit2D.getCenterY());
         vecRechit2D_X_Error.push_back(rechit2D.getErrorX());
-        vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());        vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
+        vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());
+        vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
         vecRechit2D_Y_ClusterSize.push_back(rechit2D.getClusterSizeY());
         nrechits2d++;
       }

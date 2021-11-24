@@ -7,10 +7,13 @@ class Rechit2D {
 
     public:
 
+        int fChamber;
         double fCenterX, fCenterY;
         double fErrorX, fErrorY;
         double fClusterSizeX, fClusterSizeY;
-        int fChamber;
+
+        double fCorrectionX[4] = { -0.367952, 0.218126, -0.384427, 0.0624537};
+        double fCorrectionY[4] = { -1.98828, -0.250959, 0.458888, -0.115746 };
 
         Rechit2D() {}
         Rechit2D(int, Cluster, Cluster);

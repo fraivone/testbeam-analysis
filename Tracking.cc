@@ -62,6 +62,19 @@ int main (int argc, char** argv) {
     std::vector<double> *vecRechit2D_X_ClusterSize = new std::vector<double>();
     std::vector<double> *vecRechit2D_Y_ClusterSize = new std::vector<double>();
 
+    // track & rechit 2D variables
+    std::vector<double> rechits2D_X_Center;
+    std::vector<double> rechits2D_Y_Center;
+    std::vector<double> rechits2D_X_Error;
+    std::vector<double> rechits2D_Y_Error;
+    std::vector<double> rechits2D_X_ClusterSize;
+    std::vector<double> rechits2D_Y_ClusterSize;
+    
+    std::vector<double> tracks_X_slope;
+    std::vector<double> tracks_Y_slope;
+    std::vector<double> tracks_X_intercept;
+    std::vector<double> tracks_Y_intercept;
+
     int chamber;
     Rechit2D rechit2D;
     double rechitX, rechitY;

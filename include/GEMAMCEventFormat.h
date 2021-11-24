@@ -387,6 +387,7 @@ class AMCEvent
       m_BX = 0x0fff & (word >> 20);       /*!BX ID */
       m_Dlength = 0x000fffff & word;      /*!Data Length */
       //std::cout << "L1A_ID " << m_L1A << std::endl;
+      //std::cout << "BX " << m_BX << std::endl;
       //std::cout << "Data length " << m_Dlength << std::endl;
     }
     
@@ -406,6 +407,7 @@ class AMCEvent
       m_Latency = 0x03ff & (word >> 32); //word >> 32;          /*!Run Param 3 */
       m_Onum = word >> 16;            /*!Orbit Number */
       m_BID = word;                   /*!Board ID */
+      //std::cout << "OC " << m_Onum << std::endl;
     }
     
     //!Reads the word for the GEM Event Header

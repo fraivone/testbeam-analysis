@@ -104,7 +104,7 @@ def main():
     for oh in range(4):
         h_latency[oh] = dict()
         for vfat in mapping["vfatId"].unique():
-            h_latency[oh][vfat] = rt.TH1I(f"latency_oh{oh}_vfat{vfat}", ";latency;", 7, 40, 60)
+            h_latency[oh][vfat] = rt.TH1I(f"latency_oh{oh}_vfat{vfat}", ";latency;", 30, 40, 70)
 
     digi_tree = rt.TTree("digiTree", "tree of digis")
 
@@ -131,25 +131,26 @@ def main():
                 print("CH", event.CH, len(event.CH))
             
             for i_hit in range(event.nhits):
-                hit = Hit(event.OH[i_hit], event.VFAT[i_hit], event.CH[i_hit])
+                try:
+                    hit = Hit(event.OH[i_hit], event.VFAT[i_hit], event.CH[i_hit])
+                    """try: digi = hit.to_digi()
+                    except KeyError:
+                        skipped_counter += 1
+                        continue"""
+                    #if digi.direction=="X": direction = 1
+                    #else: direction = 2
 
-                """try: digi = hit.to_digi()
-                except KeyError:
-                    skipped_counter += 1
-                    continue"""
-                #if digi.direction=="X": direction = 1
-                #else: direction = 2
+                    h_latency[hit.oh][hit.vfat_id].Fill(event.latency)
 
-                h_latency[hit.oh][hit.vfat_id].Fill(event.latency)
+                    #h_digi[digi.chamber][digi.direction].Fill(float(digi.strip))
+                    #h_digi[digi.eta].Fill(float(digi.strip))
 
-                #h_digi[digi.chamber][digi.direction].Fill(float(digi.strip))
-                #h_digi[digi.eta].Fill(float(digi.strip))
-
-                """chamber[0] = digi.chamber
-                direction[0] = digi.direction"""
-                #eta[0] = digi.eta
-                #strip[0] = digi.strip
-                #digi_tree.Fill()
+                    """chamber[0] = digi.chamber
+                    direction[0] = digi.direction"""
+                    #eta[0] = digi.eta
+                    #strip[0] = digi.strip
+                    #digi_tree.Fill()
+                except IndexError: pass
 
             #if i % 10000 == 0: print(f"{i}, skipped {skipped_counter}")
     except KeyboardInterrupt: pass

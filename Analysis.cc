@@ -46,7 +46,7 @@ void saveResidualPlot(TH1F residualHistogram, std::string plotTitle, std::string
   latex.DrawLatexNDC(.98, .985, "GEM-10x10-380XY-BARI-04");
 
   latex.SetTextAlign(31);
-  latex.DrawLatexNDC(.93, .6, std::string("Space resolution "+std::to_string(spaceResolution)+"  #mum").c_str());
+  latex.DrawLatexNDC(.93, .6, std::string("Space resolution "+std::to_string(spaceResolution)+" #mum").c_str());
 
   residualHistogram.SaveAs(std::string(outdir+"/"+plotTitle+".root").c_str());
   residualCanvas.SaveAs(std::string(outdir+"/"+plotTitle+".eps").c_str());
@@ -73,11 +73,11 @@ int main (int argc, char** argv) {
   TFile trackFile(ifile.c_str(), "READ");
   TTree *trackTree = (TTree *) trackFile.Get("trackTree");
 
-  TH1F hResidualsX("hResidualsX", ";x residual (mm);", 100, -2.5, 4);
+  TH1F hResidualsX("hResidualsX", ";x residual (mm);", 50, -2, 2);
   trackTree->Draw("rechitX-prophitX>>+hResidualsX");
   saveResidualPlot(hResidualsX, "residuals_x", outdir);
 
-  TH1F hResidualsY("hResidualsY", ";y residual (mm);", 100, -5, 3);
+  TH1F hResidualsY("hResidualsY", ";y residual (mm);", 50, -2, 2);
   trackTree->Draw("rechitY-prophitY>>+hResidualsY");
   saveResidualPlot(hResidualsY, "residuals_y", outdir);
 
@@ -100,39 +100,39 @@ int main (int argc, char** argv) {
   hResidualsYvsR.Draw("colz");
   residualYvsRCanvas.SaveAs(std::string(outdir+"/residual_yvsr.eps").c_str());
 
-  TH2F hResidualVsPropX("hResidualVsPropX", ";x propagated (mm);x residual (mm);", hPropX.GetNbinsX(), -48, 48, 50, -1, 0.6);
+  TH2F hResidualVsPropX("hResidualVsPropX", ";x propagated (mm);x residual (mm);", hPropX.GetNbinsX(), -48, 48, 50, -1, 1);
   trackTree->Draw("prophitX-rechitX:prophitX>>+hResidualVsPropX");
   TH2F hProp2DX("hProp2DX", ";x propagated (mm);;", hResidualVsPropX.GetNbinsX(), -48, 48, hResidualVsPropX.GetNbinsY(), -1, 0.6);
   for (int i=0; i<hProp2DX.GetNbinsX(); i++) {
     for (int j=0; j<hProp2DX.GetNbinsY(); j++) hProp2DX.SetBinContent(i, j, hPropX.GetBinContent(i));
   }
-  hResidualVsPropX.Divide(&hProp2DX);
+  //hResidualVsPropX.Divide(&hProp2DX);
   TCanvas residualVsPropXCanvas("cResidualVsPropX", "", 800, 600);
   residualVsPropXCanvas.SetRightMargin(.2);
   hResidualVsPropX.SetMarkerStyle(1);
   hResidualVsPropX.Draw("candlex6");
-  residualVsPropXCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit_x.png").c_str());
+  residualVsPropXCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit_x.eps").c_str());
 
-  TH2F hResidualVsPropY("hResidualVsPropY", ";y propagated (mm);y residual (mm);", hPropY.GetNbinsX(), -48, 48, 50, 1, 3);
+  TH2F hResidualVsPropY("hResidualVsPropY", ";y propagated (mm);y residual (mm);", hPropY.GetNbinsX(), -48, 48, 50, -1, 1);
   trackTree->Draw("prophitY-rechitY:prophitY>>+hResidualVsPropY");
   TH2F hProp2DY("hProp2DY", ";y propagated (mm);;", hResidualVsPropX.GetNbinsX(), -48, 48, hResidualVsPropX.GetNbinsY(), 1, 3);
   for (int i=0; i<hProp2DY.GetNbinsY(); i++) {
     for (int j=0; j<hProp2DY.GetNbinsY(); j++) hProp2DY.SetBinContent(i, j, hPropY.GetBinContent(i));
   }
-  hResidualVsPropY.Divide(&hProp2DY);
+  //hResidualVsPropY.Divide(&hProp2DY);
   TCanvas residualVsPropYCanvas("cResidualVsPropY", "", 800, 600);
   residualVsPropYCanvas.SetRightMargin(.2);
   hResidualVsPropY.SetMarkerStyle(1);
   hResidualVsPropY.Draw("candlex6");
-  residualVsPropYCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit_y.png").c_str());
+  residualVsPropYCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit_y.eps").c_str());
 
   TCanvas residualVsPropCanvas("cResidualVsProp", "", 1800, 600);
   residualVsPropCanvas.Divide(2, 1);
   residualVsPropCanvas.cd(1);
-  hResidualVsPropX.Draw();
+  hResidualVsPropX.Draw("cont0 colz");
   residualVsPropCanvas.cd(2);
-  hResidualVsPropY.Draw();
-  residualVsPropCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit.png").c_str());
+  hResidualVsPropY.Draw("cont0 colz");
+  residualVsPropCanvas.SaveAs(std::string(outdir+"/residual_vs_prophit.eps").c_str());
 
   std::cout << "Output files written to " << outdir << std::endl;
 }
