@@ -51,6 +51,9 @@ target_link_libraries(Alignment ${ROOT_LIBRARIES})
 add_executable(Analysis Analysis.cc ${sources} ${headers})
 target_link_libraries(Analysis ${ROOT_LIBRARIES})
 
+add_executable(FastEfficiency FastEfficiency.cc ${sources} ${headers})
+target_link_libraries(FastEfficiency ${ROOT_LIBRARIES})
+
 #----------------------------------------------------------------------------
 # Copy mapping files
 #
@@ -58,6 +61,8 @@ configure_file(mapping/tracker_mapping.csv mapping/tracker_mapping.csv COPYONLY)
 configure_file(mapping/ge21_mapping.csv mapping/ge21_mapping.csv COPYONLY)
 configure_file(analysis/alignment.py scripts/alignment.py COPYONLY)
 configure_file(analysis/efficiency.py scripts/efficiency.py COPYONLY)
+configure_file(analysis/residuals.py scripts/residuals.py COPYONLY)
+configure_file(analysis/horns.py scripts/horns.py COPYONLY)
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX

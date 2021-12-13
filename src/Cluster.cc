@@ -20,11 +20,11 @@ void Cluster::extend(int strip) {
     else if (strip > fLast) fLast = strip;
 }
 
-int Cluster::getCenter() {
+double Cluster::getCenter() {
     return 0.5*(fFirst + fLast);
 }
 
-int Cluster::getSize() {
+double Cluster::getSize() {
     return fLast - fFirst + 1;
 }
 

@@ -5,6 +5,8 @@
 #include <array>
 #include <bitset>
 #include <signal.h>
+#include <math.h>
+#include <sys/stat.h>
 
 #include <TFile.h>
 #include <TTree.h>
@@ -36,6 +38,8 @@ int main (int argc, char** argv) {
     }
     std::string ifile   = argv[1];
     std::string outdir   = argv[2];
+    if (mkdir(outdir.c_str(), 0755)==0) std::cout << "Created directory " << outdir << std::endl;
+    else std::cout << "Failed creating directory " << outdir << ", maybe it already exists" << std::endl;
     std::string ofile = std::string(outdir+"/tracks.root");
     
     int max_events = -1;
@@ -80,6 +84,7 @@ int main (int argc, char** argv) {
     double rechitX, rechitY;
     double rechitX_clusterSize, rechitY_clusterSize;
     double prophitX, prophitY;
+    double propErrorX, propErrorY;
     double trackFitChi2;
     int trackFitIsValid;
 
@@ -102,6 +107,8 @@ int main (int argc, char** argv) {
     trackTree.Branch("rechitYClusterSize", &rechitY_clusterSize, "rechitY_clusterSize/D");
     trackTree.Branch("prophitX", &prophitX, "prophitX/D");
     trackTree.Branch("prophitY", &prophitY, "prophitY/D");
+    trackTree.Branch("propErrorX", &propErrorX, "propErrorX/D");
+    trackTree.Branch("propErrorY", &propErrorY, "propErrorY/D");
 
     // geometry, starting from ge2/1
     double zBari1 = -(697+254+294);
@@ -145,6 +152,8 @@ int main (int argc, char** argv) {
     int fitGoodCount = 0, fitBadCount = 0;
     TFitResultPtr fitStatus1, fitStatus2;
 
+    int testedChamber = 2;
+
     std::cout << nentries << " total events" <<  std::endl;
     progressbar bar(nentries);
     signal(SIGINT, interruptHandler);
@@ -164,12 +173,12 @@ int main (int argc, char** argv) {
       for (int irechit=0; irechit<nrechits2d; irechit++) {
         // add to graph for fitting:
         chamber = vecRechit2DChamber->at(irechit);
-        if (chamber<3) {
+        if (chamber!=testedChamber) {
           graphX.SetPoint(chamber, zChamber[chamber], vecRechit2D_X_Center->at(irechit));
           graphX.SetPointError(chamber, 10, vecRechit2D_X_Error->at(irechit));
           graphY.SetPoint(chamber, zChamber[chamber], vecRechit2D_Y_Center->at(irechit));
           graphY.SetPointError(chamber, 10, vecRechit2D_Y_Error->at(irechit));
-        } else if (chamber==3) {
+        } else {
           rechitX = vecRechit2D_X_Center->at(irechit);
           rechitY = vecRechit2D_Y_Center->at(irechit);
           rechitX_clusterSize = vecRechit2D_X_ClusterSize->at(irechit);
@@ -183,7 +192,7 @@ int main (int argc, char** argv) {
         );
       }
 
-      // fit track and propagate to chamber 3
+      // fit track and propagate to chamber under test
       fitStatus1 = graphX.Fit(&trackX, "SQ");
       fitStatus2 = graphY.Fit(&trackY, "SQ");
 
@@ -192,8 +201,11 @@ int main (int argc, char** argv) {
       if (!trackFitIsValid) fitBadCount++;
       else fitGoodCount++;
 
-      prophitX = trackX.Eval(zChamber[3]);
-      prophitY = trackY.Eval(zChamber[3]);
+      prophitX = trackX.Eval(zChamber[testedChamber]);
+      prophitY = trackY.Eval(zChamber[testedChamber]);
+
+      propErrorX = sqrt(pow(trackX.GetParError(0),2)+pow(zChamber[testedChamber]*trackX.GetParError(1),2));
+      propErrorY = sqrt(pow(trackY.GetParError(0),2)+pow(zChamber[testedChamber]*trackY.GetParError(1),2));
 
       trackTree.Fill();
     }

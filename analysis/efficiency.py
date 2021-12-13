@@ -1,8 +1,6 @@
 import os, sys
 
-from tqdm import tqdm
 import numpy as np
-import pandas as pd
 import uproot
 
 import matplotlib.pyplot as plt

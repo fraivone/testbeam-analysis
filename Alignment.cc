@@ -32,7 +32,7 @@ void interruptHandler(int dummy) {
 int main (int argc, char** argv) {
 
     if (argc<3) {
-      std::cout << "Usage: Tracks ifile ofile" << std::endl;
+      std::cout << "Usage: Tracks ifile ofile [max_events]" << std::endl;
       return 0;
     }
     std::string ifile   = argv[1];
@@ -183,16 +183,16 @@ int main (int argc, char** argv) {
               break;
             }
           }
-          for (int irechit=0; irechit<nrechits2d; irechit++) {
-            if (vecRechit2D_X_ClusterSize->at(irechit)>5 or vecRechit2D_Y_ClusterSize->at(irechit)>5) {
-              goodEvent = false;
-              break;
-            }
-            // if (((int)vecRechit2D_X_ClusterSize->at(irechit))%2==1 or ((int)vecRechit2D_Y_ClusterSize->at(irechit))%2==1) {
-            //   goodEvent = false;
-            //   break;
-            // }
-          }
+          // for (int irechit=0; irechit<nrechits2d; irechit++) {
+          //   if (vecRechit2D_X_ClusterSize->at(irechit)>5 or vecRechit2D_Y_ClusterSize->at(irechit)>5) {
+          //     goodEvent = false;
+          //     break;
+          //   }
+          //   // if (((int)vecRechit2D_X_ClusterSize->at(irechit))%2==1 or ((int)vecRechit2D_Y_ClusterSize->at(irechit))%2==1) {
+          //   //   goodEvent = false;
+          //   //   break;
+          //   // }
+          // }
           if (!goodEvent) continue;
 
           //for (auto ch:*vecRechit2DChamber) std::cout << ch << " ";
@@ -220,7 +220,7 @@ int main (int argc, char** argv) {
 
           trackFitIsValid = fitStatusX->IsValid() && fitStatusY->IsValid();
           trackFitChi2 = fitStatusX->Chi2() * fitStatusY->Chi2();
-          if (fitStatusX->Chi2()>0.02 || fitStatusY->Chi2()>0.02) continue;
+          //if (fitStatusX->Chi2()>0.02 || fitStatusY->Chi2()>0.02) continue;
           if (!trackFitIsValid) fitBadCount++;
           else fitGoodCount++;
 

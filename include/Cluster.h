@@ -15,8 +15,8 @@ class Cluster {
 
         bool isNeighbour(int strip);
         void extend(int strip);
-        int getCenter();
-        int getSize();
+        double getCenter();
+        double getSize();
 
         int getOh();
         int getEta();

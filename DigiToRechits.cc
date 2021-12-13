@@ -105,6 +105,10 @@ int main (int argc, char** argv) {
 
   int nentries = digiTree->GetEntries();
   std::cout << nentries << " total events" <<  std::endl;
+  if (max_events>0) {
+    std::cout << "Processing " << nentries << " events" << std::endl;
+    nentries = max_events;
+  }
   progressbar bar(nentries);
 
   signal(SIGINT, interruptHandler);
@@ -122,13 +126,12 @@ int main (int argc, char** argv) {
     vecClusterSize.clear();
 
     digisInEvent.clear();
-    for (int ihit=0; ihit<nhits; ihit++) digisInEvent.push_back(
-      Digi(
+    for (int ihit=0; ihit<nhits; ihit++)
+      digisInEvent.push_back(Digi(
         vecDigiOH->at(ihit),
         vecDigiEta->at(ihit),
         vecDigiStrip->at(ihit)
-        )
-      );
+      ));
     clustersInEvent = Cluster::fromDigis(digisInEvent);
 
     nrechits2d = 0;
@@ -148,31 +151,35 @@ int main (int argc, char** argv) {
       vecClusterFirst.push_back(clustersInEvent[icluster].getFirst());
       vecClusterSize.push_back(clustersInEvent[icluster].getSize());
 
-      // build 2D rechits for tracker only:
-      if (clustersInEvent[icluster].getOh() == 0) continue;
-      chamber1 = clustersInEvent[icluster].getChamber();
-      direction1 = clustersInEvent[icluster].getDirection();
-      if (direction1 != 0) continue; // first cluster in X direction
-
-      for (int jcluster=0; jcluster<nclusters; jcluster++) {
-        // match with all clusters in perpendicular direction
-        if (clustersInEvent[icluster].getOh() != clustersInEvent[jcluster].getOh()) continue;
+      if (clustersInEvent[icluster].getOh() == 0) {
+        // for large chamber, build 1D rechits:
         
-        chamber2 = clustersInEvent[jcluster].getChamber();
-        if (chamber1!=chamber2) continue;        
-        direction2 = clustersInEvent[jcluster].getDirection();
-        if (direction1==direction2) continue;
-        
-        rechit2D = Rechit2D(chamber1, clustersInEvent[icluster], clustersInEvent[jcluster]);
+      } else {
+        // for tracker, build 2D rechits:
+        chamber1 = clustersInEvent[icluster].getChamber();
+        direction1 = clustersInEvent[icluster].getDirection();
+        if (direction1 != 0) continue; // first cluster in X direction
 
-        vecRechit2DChamber.push_back(chamber1);
-        vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
-        vecRechit2D_Y_Center.push_back(rechit2D.getCenterY());
-        vecRechit2D_X_Error.push_back(rechit2D.getErrorX());
-        vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());
-        vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
-        vecRechit2D_Y_ClusterSize.push_back(rechit2D.getClusterSizeY());
-        nrechits2d++;
+        for (int jcluster=0; jcluster<nclusters; jcluster++) {
+          // match with all clusters in perpendicular direction
+          if (clustersInEvent[icluster].getOh() != clustersInEvent[jcluster].getOh()) continue;
+          
+          chamber2 = clustersInEvent[jcluster].getChamber();
+          if (chamber1!=chamber2) continue;        
+          direction2 = clustersInEvent[jcluster].getDirection();
+          if (direction1==direction2) continue;
+          
+          rechit2D = Rechit2D(chamber1, clustersInEvent[icluster], clustersInEvent[jcluster]);
+
+          vecRechit2DChamber.push_back(chamber1);
+          vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
+          vecRechit2D_Y_Center.push_back(rechit2D.getCenterY());
+          vecRechit2D_X_Error.push_back(rechit2D.getErrorX());
+          vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());
+          vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
+          vecRechit2D_Y_ClusterSize.push_back(rechit2D.getClusterSizeY());
+          nrechits2d++;
+        }
       }
     }
     
@@ -180,6 +187,7 @@ int main (int argc, char** argv) {
   }
   std::cout << std::endl;
 
+  rechitTree.Write();
   rechitFile.Close();
   std::cout << "Output file saved to " << ofile << std::endl;
 }
