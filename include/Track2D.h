@@ -12,11 +12,20 @@ class Track2D {
 
         Track2D() {}
 
-        Track fTrackX, fTrackY;
-
         void addRechit(Rechit2D);
         void clear();
         void fit();
+
+        double getInterceptX() {return fTrackX.getIntercept();}
+        double getInterceptY() {return fTrackY.getIntercept();}
+        double getSlopeX() {return fTrackX.getSlope();}
+        double getSlopeY() {return fTrackY.getSlope();}
+        double getInterceptErrorX() {return fTrackX.getInterceptError();}
+        double getInterceptErrorY() {return fTrackY.getInterceptError();}
+        double getSlopeErrorX() {return fTrackX.getSlopeError();}
+        double getSlopeErrorY() {return fTrackY.getSlopeError();}
+    private:
+        Track fTrackX, fTrackY;
 };
 
 #endif

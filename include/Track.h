@@ -15,12 +15,18 @@ class Track {
 
         std::vector<Rechit> fRechits;
 
-        double fIntercept, fSlope;
-        double fInterceptError, fSlopeError;
-
         void addRechit(Rechit);
         void clear();
         void fit();
+
+        double getIntercept() {return fIntercept;}
+        double getSlope() {return fSlope;}
+        double getInterceptError() {return fInterceptError;}
+        double getSlopeError() {return fSlopeError;}
+
+    private:
+        double fIntercept, fSlope;
+        double fInterceptError, fSlopeError;
 };
 
 #endif
