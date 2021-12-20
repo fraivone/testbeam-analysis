@@ -11,6 +11,7 @@ include_directories($ENV{ANALYSIS_HOME}/include)
 
 set(sources
     $ENV{ANALYSIS_HOME}/src/TestBeamMapping.cc
+    $ENV{ANALYSIS_HOME}/src/Track2D.cc
     $ENV{ANALYSIS_HOME}/src/Track.cc
     $ENV{ANALYSIS_HOME}/src/Rechit2D.cc
     $ENV{ANALYSIS_HOME}/src/Rechit.cc

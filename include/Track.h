@@ -7,17 +7,11 @@
 #ifndef DEF_TRACK
 #define DEF_TRACK
 
-// void linearFunction(int &npar, double *gin, double &chi2, double *par, int iflag) {
-//     double q = par[0], m = par[1];
-//     chi2 = 0.;
-//     for (int i=0; i<ndata; i++) {
-//         chi2 += pow(x_i-m*z_i-q, 2)/pow(err_i, 2);
-//     }
-// }
-
 class Track {
 
     public:
+
+        Track();
 
         std::vector<Rechit> fRechits;
 
