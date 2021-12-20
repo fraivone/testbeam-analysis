@@ -12,6 +12,7 @@ include_directories($ENV{ANALYSIS_HOME}/include)
 set(sources
     $ENV{ANALYSIS_HOME}/src/TestBeamMapping.cc
     $ENV{ANALYSIS_HOME}/src/Rechit2D.cc
+    $ENV{ANALYSIS_HOME}/src/Rechit.cc
     $ENV{ANALYSIS_HOME}/src/Cluster.cc
     $ENV{ANALYSIS_HOME}/src/Digi.cc)
 

@@ -2,25 +2,27 @@
 #include <vector>
 #include <math.h>
 
+#include "Rechit.h"
 #include "Rechit2D.h"
 #include "Cluster.h"
 
-Rechit2D::Rechit2D(int chamber, Cluster cluster1, Cluster cluster2) {
+Rechit2D::Rechit2D(int chamber, Cluster clusterX, Cluster clusterY) {
     fChamber = chamber;
-    fCenterX = -44.75 + cluster1.getCenter()*0.25 - fCorrectionX[chamber];
-    fCenterY = 44.75 - cluster2.getCenter()*0.25 - fCorrectionY[chamber];
-    fClusterSizeX = cluster1.getSize();
-    fClusterSizeY = cluster2.getSize();
-    // calculate rechit error as pitch * sqrt(12) * sqrt(nstrips):
-    fErrorX = cluster1.getSize()*0.07217;
-    fErrorY = cluster2.getSize()*0.07217;
+    fRechitX = Rechit(chamber, 0, clusterX);
+    fRechitY = Rechit(chamber, 1, clusterY);
 }
 
-double Rechit2D::getCenterX() {return fCenterX; }
-double Rechit2D::getCenterY() {return fCenterY; }
-double Rechit2D::getErrorX() {return fErrorX; }
-double Rechit2D::getErrorY() {return fErrorY; }
-double Rechit2D::getClusterSizeX() {return fClusterSizeX; }
-double Rechit2D::getClusterSizeY() {return fClusterSizeY; }
+Rechit2D::Rechit2D(int chamber, Rechit rechitX, Rechit rechitY) {
+    fChamber = chamber;
+    fRechitX = rechitX;
+    fRechitY = rechitY;
+}
+
+double Rechit2D::getCenterX() {return fRechitX.getCenter(); }
+double Rechit2D::getCenterY() {return fRechitY.getCenter(); }
+double Rechit2D::getErrorX() {return fRechitX.getError(); }
+double Rechit2D::getErrorY() {return fRechitY.getError(); }
+double Rechit2D::getClusterSizeX() {return fRechitX.getClusterSize(); }
+double Rechit2D::getClusterSizeY() {return fRechitY.getClusterSize(); }
 
 int Rechit2D::getChamber() {return fChamber;}
