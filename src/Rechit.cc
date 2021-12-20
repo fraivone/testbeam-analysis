@@ -17,4 +17,5 @@ Rechit::Rechit(int chamber, int direction, Cluster cluster) {
 double Rechit::getCenter() {return fCenter; }
 double Rechit::getError() {return fError; }
 double Rechit::getClusterSize() {return fClusterSize; }
+double Rechit::getZ() {return zChamber[fChamber]; }
 int Rechit::getChamber() {return fChamber;}

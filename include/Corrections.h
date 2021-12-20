@@ -8,6 +8,15 @@ double corrections[2][4] = {
 
 double x0[2] = { -44.75, +44.75 };
 
+// geometry, starting from ge2/1
+double zBari1 = -(697+254+294);
+double zBari2 = -(254+294);
+double zMe0 = -294;
+double zBari3 = 170;
+double zBari4 = 170+697;
+
+double zChamber[4] = { zBari1, zBari2, zBari3, zBari4 };
+
 // class Corrections {
 
 //     public:

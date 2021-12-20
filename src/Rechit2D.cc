@@ -24,5 +24,4 @@ double Rechit2D::getErrorX() {return fRechitX.getError(); }
 double Rechit2D::getErrorY() {return fRechitY.getError(); }
 double Rechit2D::getClusterSizeX() {return fRechitX.getClusterSize(); }
 double Rechit2D::getClusterSizeY() {return fRechitY.getClusterSize(); }
-
 int Rechit2D::getChamber() {return fChamber;}

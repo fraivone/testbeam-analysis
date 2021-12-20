@@ -24,6 +24,7 @@ class Rechit {
         double getCenter();
         double getError();
         double getClusterSize();
+        double getZ();
         int getChamber();
 
         void print() {
