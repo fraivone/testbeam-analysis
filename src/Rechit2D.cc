@@ -12,8 +12,8 @@ Rechit2D::Rechit2D(int chamber, Cluster cluster1, Cluster cluster2) {
     fClusterSizeX = cluster1.getSize();
     fClusterSizeY = cluster2.getSize();
     // calculate rechit error as pitch * sqrt(12) * sqrt(nstrips):
-    fErrorX = cluster1.getSize()*0.866;
-    fErrorY = cluster2.getSize()*0.866;
+    fErrorX = cluster1.getSize()*0.07217;
+    fErrorY = cluster2.getSize()*0.07217;
 }
 
 double Rechit2D::getCenterX() {return fCenterX; }

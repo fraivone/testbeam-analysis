@@ -1,4 +1,5 @@
 import os, sys
+from posixpath import join
 
 import uproot
 import numpy as np
@@ -31,82 +32,114 @@ def main():
         track_tree = track_file["trackTree"]
         if verbose: track_tree.show()
 
-        prophits_x, prophits_y = track_tree["prophitX"].array(library="np"), track_tree["prophitY"].array(library="np")
-        rechits_x, rechits_y = track_tree["rechitX"].array(library="np"), track_tree["rechitY"].array(library="np")
+        rechits_x = np.vstack(track_tree["rechits2D_X"].array(library="np")).T
+        rechits_y = np.vstack(track_tree["rechits2D_Y"].array(library="np")).T
+        prophits_x = np.vstack(track_tree["prophits2D_X"].array(library="np")).T
+        prophits_y = np.vstack(track_tree["prophits2D_Y"].array(library="np")).T
         residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
-        print("Saving residual map...")
-        residual_fig, residual_axs = plt.subplots(nrows=2, ncols=1, figsize=(10,14))
-        prophits = [prophits_x, prophits_y]
-        residuals = [residuals_x, residuals_y]
+        rechits_x_error = np.vstack(track_tree["rechits2D_X_Error"].array(library="np")).T
+        rechits_y_error = np.vstack(track_tree["rechits2D_Y_Error"].array(library="np")).T
+        cluster_size_x = np.vstack(track_tree["rechits2D_X_ClusterSize"].array(library="np")).T
+        cluster_size_y = np.vstack(track_tree["rechits2D_Y_ClusterSize"].array(library="np")).T
+        prophits_x_error = np.vstack(track_tree["prophits2D_X_Error"].array(library="np")).T
+        prophits_y_error = np.vstack(track_tree["prophits2D_Y_Error"].array(library="np")).T
+
         directions = ["x", "y"]
+        residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(32,14))
+        for tested_chamber in range(4):
+            print(f"Processing chamber {tested_chamber}...")
+            prophits = [prophits_x[tested_chamber], prophits_y[tested_chamber]]
+            residuals = [residuals_x[tested_chamber], residuals_y[tested_chamber]]
+            cluster_sizes = [cluster_size_x[tested_chamber], cluster_size_y[tested_chamber]]
 
-        space_resolutions = dict()
-        spres_fig, spres_ax = plt.subplots(figsize=(10,7))
-        residuals2d_fig, residuals2d_ax = plt.subplots(nrows=2, ncols=1, figsize=(10,12))
-        cluster_sizes = list(range(1,10))
-        for iplot in range(2):
-            direction = directions[iplot]
-            space_resolutions[direction] = list()
-            if direction == "x": cluster_size = track_tree["rechitXClusterSize"].array(library="np")
-            elif direction == "y": cluster_size = track_tree["rechitYClusterSize"].array(library="np")
-            for cls in cluster_sizes:
-            #for parity in [0, 1]:
-                #even_or_odd = "even"*(parity==0) + "odd"*(parity==1)
-                #data = residuals[iplot][cluster_size%2==parity]
-                data = residuals[iplot][cluster_size==cls]
+            properr_fig, properr_ax = plt.figure(figsize=(10,7)), plt.axes()
+            space_resolutions = dict()
+            spres_fig, spres_ax = plt.subplots(figsize=(10,7))
+            residuals2d_fig, residuals2d_ax = plt.subplots(nrows=2, ncols=1, figsize=(10,12))
+            cluster_sizes = list(range(1,10))
+            cluster_sizes = [0]
+            for idirection in range(2):
+                direction = directions[idirection]
+                space_resolutions[direction] = list()
+                #cluster_size = cluster_sizes[idirection]
+                for cls in cluster_sizes:
+                #for parity in [0, 1]:
+                    #even_or_odd = "even"*(parity==0) + "odd"*(parity==1)
+                    #data = residuals[idirection][cluster_size%2==parity]
+                    #data = residuals[idirection][cluster_size==cls]
+                    data = residuals[idirection]
 
-                points, bins = np.histogram(data, bins=30, range=(-1.5, 1.5))
-                # points, bins, _ = plt.hist(data, bins=20, range=[-2, 2])
-                bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
+                    points, bins = np.histogram(data, bins=1000, range=(-0.3, 0.3))
+                    bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
+                    
+                    # gaussian fit
+                    coeff = [len(data), data.mean(), data.std()]
+                    coeff += [len(data)*0.1, data.mean(), 10*data.std()]
+                    #coeff, var_matrix = curve_fit(gauss2, bins, points, p0=coeff)
+                    #print(f"Before fit: {p0}. Fit results: {coeff}")
+                    space_resolution = 1e3*coeff[2]
+                    space_resolutions[direction].append(space_resolution)
+                    
+                    # plot data and fit
+                    label = f"size {cls} - {space_resolution:1.0f} µm"
+                    residual_axs[idirection][tested_chamber].hist(
+                        data, bins=1000, range=(-0.3, 0.3),
+                        histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k",
+                        label=label
+                    )
+                    #residual_axs[idirection][tested_chamber].scatter(bins, points, marker="o", label=label)
+                    xvalues = np.linspace(bins[0], bins[-1], 1000)
+                    #residual_axs[idirection][tested_chamber].plot(xvalues, gauss2(xvalues, *coeff))
+                    residual_axs[idirection][tested_chamber].set_xlabel(f"{directions[idirection]} residual (mm)")
+                    #residual_axs[idirection][tested_chamber].legend()
+
+                    if idirection==0:
+                        residual_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+
+                    # residual_axs[idirection][tested_chamber].text(
+                    #     2, (1-0.1*parity)*1e6,
+                    #     f"Space resolution {space_resolution:1.0f} µm",
+                    #     horizontalalignment="right",
+                    #     fontsize=20
+                    # )
+
+                spres_ax.plot(cluster_sizes, space_resolutions[direction], marker="o", label=direction)
                 
-                # gaussian fit
-                p0 = [len(data), data.mean(), data.std()]
-                p0 += [len(data)*0.1, data.mean(), 10*data.std()]
-                coeff, var_matrix = curve_fit(gauss2, bins, points, p0=p0)
-                print(f"Before fit: {p0}. Fit results: {coeff}")
-                space_resolution = 1e3*coeff[2]
-                space_resolutions[direction].append(space_resolution)
-                
-                # plot data and fit
-                residual_axs[iplot].scatter(bins, points, marker="o", label=f"size {cls} - {space_resolution:1.0f} µm")
-                xvalues = np.linspace(bins[0], bins[-1], 1000)
-                residual_axs[iplot].plot(xvalues, gauss2(xvalues, *coeff))
-                residual_axs[iplot].set_xlabel(f"residuals {directions[iplot]} (mm)")
-                # residual_axs[iplot].text(
-                #     2, (1-0.1*parity)*1e6,
-                #     f"Space resolution {space_resolution:1.0f} µm",
-                #     horizontalalignment="right",
-                #     fontsize=20
-                # )
-                residual_axs[iplot].legend()
+                residuals2d_ax[idirection].hist2d(prophits[idirection], residuals[idirection], bins=100, range=[[-40, 40],[-1, 1]])
+                residuals2d_ax[idirection].set_title(f"BARI-0{tested_chamber+1} direction {direction}")
+                residuals2d_ax[idirection].set_xlabel("Propagated position (mm)")
+                residuals2d_ax[idirection].set_ylabel("Residual (mm)")
 
-            spres_ax.plot(cluster_sizes, space_resolutions[direction], marker="o", label=direction)
-            
-            residuals2d_ax[iplot].hist2d(prophits[iplot], residuals[iplot], bins=100, range=[[-40, 40],[-1, 1]])
-            residuals2d_ax[iplot].set_title(f"Direction {direction}")
-            residuals2d_ax[iplot].set_xlabel("Propagated position (mm)")
-            residuals2d_ax[iplot].set_ylabel("Residual (mm)")
+            # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
+            # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
+            # #plt.contourf(bins_x, bins_y, efficiency)
+            # plt.imshow(efficiency, extent=eff_range[0]+eff_range[1], origin="lower")
+            # plt.xlabel("x (mm)")
+            # plt.ylabel("y (mm)")
+            # plt.colorbar(label="Efficiency")
+            # plt.tight_layout()
+            # plt.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GEM-10x10-380XY-BARI-04", horizontalalignment="right")
 
-        # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
-        # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
-        # #plt.contourf(bins_x, bins_y, efficiency)
-        # plt.imshow(efficiency, extent=eff_range[0]+eff_range[1], origin="lower")
-        # plt.xlabel("x (mm)")
-        # plt.ylabel("y (mm)")
-        # plt.colorbar(label="Efficiency")
-        # plt.tight_layout()
-        # plt.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GEM-10x10-380XY-BARI-04", horizontalalignment="right")
+            # plot propagation errors
+            properr_ax.hist(prophits_x_error[tested_chamber], bins=70, label="x", alpha=0.3)
+            properr_ax.hist(prophits_y_error[tested_chamber], bins=70, label="y", alpha=0.3)
+            properr_ax.set_xlim(0, 0.7)
+            properr_ax.set_xlabel("Extrapolation uncertainty (mm)")
+            properr_ax.set_title(f"BARI-0{tested_chamber+1}")
+            properr_ax.legend()
+            properr_fig.savefig(os.path.join(odir, f"extrapolation_error_{tested_chamber}.png"))
+
+            spres_ax.set_xlabel("Cluster size")            
+            spres_ax.set_ylabel(f"Space resolution (µm)")
+            spres_ax.legend()
+            spres_fig.tight_layout()
+            spres_fig.savefig(os.path.join(odir, f"space_resolution_{tested_chamber}.png"))
+
+            residuals2d_fig.tight_layout()
+            residuals2d_fig.savefig(os.path.join(odir, f"residuals2d_{tested_chamber}.png"))
+
         residual_fig.tight_layout()
-        residual_fig.savefig(f"{odir}/residuals.png")
-
-        spres_ax.set_xlabel("Cluster size")            
-        spres_ax.set_ylabel(f"Space resolution (µm)")
-        spres_ax.legend()
-        spres_fig.tight_layout()
-        spres_fig.savefig(f"{odir}/space_resolution.png")
-
-        residuals2d_fig.tight_layout()
-        residuals2d_fig.savefig(f"{odir}/residuals2d.png")
+        residual_fig.savefig(os.path.join(odir,f"residuals.png"))
 
 if __name__=='__main__': main()
