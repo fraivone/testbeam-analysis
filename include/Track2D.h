@@ -16,6 +16,11 @@ class Track2D {
         void clear();
         void fit();
 
+        double propagateX(double z) {return fTrackX.propagate(z);}
+        double propagateY(double z) {return fTrackY.propagate(z);}
+        double propagationErrorX(double z) {return fTrackX.propagationError(z);}
+        double propagationErrorY(double z) {return fTrackY.propagationError(z);}
+
         double getInterceptX() {return fTrackX.getIntercept();}
         double getInterceptY() {return fTrackY.getIntercept();}
         double getSlopeX() {return fTrackX.getSlope();}
@@ -24,6 +29,7 @@ class Track2D {
         double getInterceptErrorY() {return fTrackY.getInterceptError();}
         double getSlopeErrorX() {return fTrackX.getSlopeError();}
         double getSlopeErrorY() {return fTrackY.getSlopeError();}
+
     private:
         Track fTrackX, fTrackY;
 };

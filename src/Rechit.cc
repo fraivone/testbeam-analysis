@@ -10,8 +10,14 @@ Rechit::Rechit(int chamber, int direction, Cluster cluster) {
     fChamber = chamber;
     fCenter = x0[direction] + cluster.getCenter()*0.25 - corrections[direction][chamber];
     fClusterSize = cluster.getSize();
-    // calculate rechit error as pitch * sqrt(12) * sqrt(nstrips):
-    fError = fClusterSize*0.07217;
+    fError = fClusterSize*PITCH_SQRT_12;
+}
+
+Rechit::Rechit(int chamber, int direction, double center, int clusterSize) {
+    fChamber = chamber;
+    fCenter = center;
+    fClusterSize = clusterSize;
+    fError = fClusterSize*PITCH_SQRT_12;
 }
 
 double Rechit::getCenter() {return fCenter; }

@@ -1,13 +1,14 @@
 #include<vector>
 
 #include "Minuit2/FCNBase.h"
+#include "TObject.h"
 
 #include "Rechit.h"
 
 #ifndef DEF_TRACK
 #define DEF_TRACK
 
-class Track {
+class Track : public TObject {
 
     public:
 
@@ -18,6 +19,9 @@ class Track {
         void addRechit(Rechit);
         void clear();
         void fit();
+        
+        double propagate(double);
+        double propagationError(double);
 
         double getIntercept() {return fIntercept;}
         double getSlope() {return fSlope;}

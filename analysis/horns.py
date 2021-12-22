@@ -19,18 +19,18 @@ def main():
     with uproot.open(ifile) as track_file:
         track_tree = track_file["trackTree"]
         if verbose:
-            print("Events: ", len(track_tree["trackFitChi2"].array(library="np")))
+            print("Events: ", len(track_tree["trackFitChi2"].array(library="np", entry_stop=1000000)))
             track_tree.show()
 
         print("Reading tree...")
 
-        rechits_x = np.vstack(track_tree["rechits2D_X"].array(library="np")).T
-        rechits_y = np.vstack(track_tree["rechits2D_Y"].array(library="np")).T
-        prophits_x = np.vstack(track_tree["prophits2D_X"].array(library="np")).T
-        prophits_y = np.vstack(track_tree["prophits2D_Y"].array(library="np")).T
+        rechits_x = np.vstack(track_tree["rechits2D_X"].array(library="np", entry_stop=1000000)).T
+        rechits_y = np.vstack(track_tree["rechits2D_Y"].array(library="np", entry_stop=1000000)).T
+        prophits_x = np.vstack(track_tree["prophits2D_X"].array(library="np", entry_stop=1000000)).T
+        prophits_y = np.vstack(track_tree["prophits2D_Y"].array(library="np", entry_stop=1000000)).T
         residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
-        cluster_size_x = np.vstack(track_tree["rechits2D_X_ClusterSize"].array(library="np")).T
-        cluster_size_y = np.vstack(track_tree["rechits2D_Y_ClusterSize"].array(library="np")).T
+        cluster_size_x = np.vstack(track_tree["rechits2D_X_ClusterSize"].array(library="np", entry_stop=1000000)).T
+        cluster_size_y = np.vstack(track_tree["rechits2D_Y_ClusterSize"].array(library="np", entry_stop=1000000)).T
 
         # print("Applying angular alignment...")
         # phi = np.arctan(0.2/0.2)

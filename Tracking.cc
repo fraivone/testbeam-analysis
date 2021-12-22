@@ -21,7 +21,9 @@
 
 #include "Digi.h"
 #include "Cluster.h"
+#include "Rechit.h"
 #include "Rechit2D.h"
+#include "Track2D.h"
 
 #include "progressbar.h"
 
@@ -144,13 +146,15 @@ int main (int argc, char** argv) {
     double zEnd = zBari2;
 
     // linear track fit
-    TF1 trackX("fTrackX", "[0]+[1]*x", zStart, zEnd);
+    /*TF1 trackX("fTrackX", "[0]+[1]*x", zStart, zEnd);
     TF1 trackY("fTrackY", "[0]+[1]*x", zStart, zEnd);
     // linear track graph
     TGraphErrors graphX;
     TGraphErrors graphY;
     graphX.SetName("gTrackX");
-    graphY.SetName("gTrackY");
+    graphY.SetName("gTrackY");*/
+
+    Track2D track;
 
     // sample track used for propagation error
     TF1 sampleTrackX("fSampleTrackX", "[0]+[1]*x", zStart, zEnd);
@@ -192,10 +196,11 @@ int main (int argc, char** argv) {
 
       rechitTree->GetEntry(nevt);
 
-      for (int i=0; i<nChambers; i++) {
+      /*for (int i=0; i<nChambers; i++) {
         graphX.RemovePoint(i);
         graphY.RemovePoint(i);
-      }
+      }*/
+      track.clear();
 
       // process only if single rechit per chamber per event:
       if (nrechits2d!=nChambers) continue;
@@ -208,43 +213,58 @@ int main (int argc, char** argv) {
       nentriesGolden++;
 
       for (int testedChamber=0; testedChamber<nChambers; testedChamber++) {
-        // reset track:
+        /*// reset track:
         trackX.SetParameters(0., 0.);
-        trackY.SetParameters(0., 0.);
+        trackY.SetParameters(0., 0.);*/
+        track.clear();
         // loop over rechits and make track:
         for (int irechit=0; irechit<nrechits2d; irechit++) {
           chamber = vecRechit2DChamber->at(irechit);
           if (chamber!=testedChamber) {
-            // add to graph for fitting:
+            /*// add to graph for fitting:
             graphX.SetPoint(graphX.GetN(), zChamber[chamber], vecRechit2D_X_Center->at(irechit));
             graphY.SetPoint(graphY.GetN(), zChamber[chamber], vecRechit2D_Y_Center->at(irechit));
             graphX.SetPointError(graphX.GetN()-1, 1, vecRechit2D_X_Error->at(irechit)/0.866*0.07217);
-            graphY.SetPointError(graphY.GetN()-1, 1, vecRechit2D_Y_Error->at(irechit)/0.866*0.07217);
+            graphY.SetPointError(graphY.GetN()-1, 1, vecRechit2D_Y_Error->at(irechit)/0.866*0.07217);*/
+            track.addRechit(Rechit2D(chamber,
+              Rechit(chamber, 0, vecRechit2D_X_Center->at(irechit), vecRechit2D_X_ClusterSize->at(irechit)),
+              Rechit(chamber, 1, vecRechit2D_Y_Center->at(irechit), vecRechit2D_Y_ClusterSize->at(irechit))
+            ));
           } else {
             // add rechit to tree
             rechits2D_X[testedChamber] = vecRechit2D_X_Center->at(irechit);
             rechits2D_Y[testedChamber] = vecRechit2D_Y_Center->at(irechit);
             rechits2D_X_ClusterSize[testedChamber] = vecRechit2D_X_ClusterSize->at(irechit);
             rechits2D_Y_ClusterSize[testedChamber] = vecRechit2D_Y_ClusterSize->at(irechit);
-            rechits2D_X_Error[testedChamber] = vecRechit2D_X_Error->at(irechit)/0.866*0.07217;
-            rechits2D_Y_Error[testedChamber] = vecRechit2D_Y_Error->at(irechit)/0.866*0.07217;
+            rechits2D_X_Error[testedChamber] = vecRechit2D_X_ClusterSize->at(irechit)*0.07217;
+            rechits2D_Y_Error[testedChamber] = vecRechit2D_Y_ClusterSize->at(irechit)*0.07217;
           }
         }
         // fit track and propagate to chamber under test:
-        fitStatus1 = graphX.Fit(&trackX, "SQ");
-        fitStatus2 = graphY.Fit(&trackY, "SQ");
-        tracks_X_slope[testedChamber] = trackX.GetParameter(0);
-        tracks_Y_slope[testedChamber] = trackY.GetParameter(0);
-        tracks_X_intercept[testedChamber] = trackX.GetParameter(1);
-        tracks_Y_intercept[testedChamber] = trackY.GetParameter(1);
+        track.fit();
+        tracks_X_slope[testedChamber] = track.getSlopeX();
+        tracks_Y_slope[testedChamber] = track.getSlopeY();
+        tracks_X_intercept[testedChamber] = track.getInterceptX();
+        tracks_Y_intercept[testedChamber] = track.getInterceptY();
+        prophits2D_X[testedChamber] = track.propagateX(zChamber[testedChamber]);
+        prophits2D_Y[testedChamber] = track.propagateY(zChamber[testedChamber]);
+        prophits2D_X_Error[testedChamber] = track.propagationErrorX(zChamber[testedChamber]);
+        prophits2D_Y_Error[testedChamber] = track.propagationErrorY(zChamber[testedChamber]);
 
-        trackFitIsValid[testedChamber] = fitStatus1->IsValid() && fitStatus2->IsValid();
+        // fitStatus1 = graphX.Fit(&trackX, "SQ");
+        // fitStatus2 = graphY.Fit(&trackY, "SQ");
+        // tracks_X_slope[testedChamber] = trackX.GetParameter(0);
+        // tracks_Y_slope[testedChamber] = trackY.GetParameter(0);
+        // tracks_X_intercept[testedChamber] = trackX.GetParameter(1);
+        // tracks_Y_intercept[testedChamber] = trackY.GetParameter(1);
+
+        /*trackFitIsValid[testedChamber] = fitStatus1->IsValid() && fitStatus2->IsValid();
         trackFitChi2[testedChamber] = fitStatus1->Chi2() * fitStatus2->Chi2();
         if (!trackFitIsValid[testedChamber]) fitBadCount++;
-        else fitGoodCount++;
+        else fitGoodCount++;*/
 
-        prophits2D_X[testedChamber] = trackX.Eval(zChamber[testedChamber]);
-        prophits2D_Y[testedChamber] = trackY.Eval(zChamber[testedChamber]);
+        // prophits2D_X[testedChamber] = trackX.Eval(zChamber[testedChamber]);
+        // prophits2D_Y[testedChamber] = trackY.Eval(zChamber[testedChamber]);
 
         /*//
         // Calculate propagation error by weird procedure
@@ -279,8 +299,8 @@ int main (int argc, char** argv) {
         prophits2D_X_Error[testedChamber] = sampleTrackX.Eval(zChamber[testedChamber]) - zValuesX[testedChamber];
         prophits2D_Y_Error[testedChamber] = sampleTrackY.Eval(zChamber[testedChamber]) - zValuesY[testedChamber];*/
 
-        prophits2D_X_Error[testedChamber] = sqrt(pow(trackX.GetParError(0),2)+pow(zChamber[testedChamber]*trackX.GetParError(1),2));
-        prophits2D_Y_Error[testedChamber] = sqrt(pow(trackY.GetParError(0),2)+pow(zChamber[testedChamber]*trackY.GetParError(1),2));
+        // prophits2D_X_Error[testedChamber] = sqrt(pow(trackX.GetParError(0),2)+pow(zChamber[testedChamber]*trackX.GetParError(1),2));
+        // prophits2D_Y_Error[testedChamber] = sqrt(pow(trackY.GetParError(0),2)+pow(zChamber[testedChamber]*trackY.GetParError(1),2));
 
         // fill beam profile:
         profileHistograms[testedChamber].Fill(rechits2D_X[testedChamber], rechits2D_Y[testedChamber]);

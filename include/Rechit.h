@@ -3,6 +3,9 @@
 #ifndef DEF_RECHIT
 #define DEF_RECHIT
 
+// to calculate rechit error as pitch * sqrt(12) * nstrips:
+const double PITCH_SQRT_12 = 0.07217;
+
 class Rechit {
 
     public:
@@ -20,6 +23,7 @@ class Rechit {
 
         Rechit() {}
         Rechit(int, int, Cluster);
+        Rechit(int, int, double, int);
 
         double getCenter();
         double getError();
