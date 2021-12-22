@@ -6,7 +6,8 @@ double corrections[2][4] = {
     { -2.06244, -0.207079, +0.577936, +0.108215 }
 };
 
-double x0[2] = { -44.75, +44.75 };
+double mappingStart[2] = { -44.75, +44.75 };
+double mappingScale[2] = { +1, -1 };
 
 // geometry, starting from ge2/1
 double zBari1 = -(697+254+294);

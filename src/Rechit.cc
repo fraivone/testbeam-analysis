@@ -8,7 +8,7 @@
 
 Rechit::Rechit(int chamber, int direction, Cluster cluster) {
     fChamber = chamber;
-    fCenter = x0[direction] + cluster.getCenter()*0.25 - corrections[direction][chamber];
+    fCenter = mappingStart[direction] + mappingScale[direction]*cluster.getCenter()*0.25 - corrections[direction][chamber];
     fClusterSize = cluster.getSize();
     fError = fClusterSize*PITCH_SQRT_12;
 }
