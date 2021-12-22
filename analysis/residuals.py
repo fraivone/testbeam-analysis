@@ -49,6 +49,7 @@ def main():
         print("Starting plotting...")
         directions = ["x", "y"]
         residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(32,14))
+        residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(32,14))
         spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         for tested_chamber in range(4):
             print(f"Processing chamber {tested_chamber}...")
@@ -60,7 +61,7 @@ def main():
             space_resolutions = dict()
             residuals2d_fig, residuals2d_ax = plt.subplots(nrows=2, ncols=1, figsize=(10,12))
             cluster_size_cuts = [0]
-            cluster_size_cuts = list(range(1,7))
+            cluster_size_cuts = list(range(1,10))
             for idirection in range(2):
                 direction = directions[idirection]
                 space_resolutions[direction] = list()
@@ -73,7 +74,7 @@ def main():
                     data = residuals[idirection][cluster_size==cls]
                     #data = residuals[idirection]
 
-                    points, bins = np.histogram(data, bins=100, range=(-0.8, 0.8))
+                    points, bins = np.histogram(data, bins=50, range=(-1.2, 1.2))
                     bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
                     
                     # gaussian fit
@@ -86,21 +87,21 @@ def main():
                     
                     # plot data and fit
                     label = f"size {cls} - {space_resolution:1.0f} µm"
-                    residual_axs[idirection][tested_chamber].hist(
-                        data, bins=100, range=(-0.8, 0.8),
+                    residual_cls_axs[idirection][tested_chamber].hist(
+                        data, bins=50, range=(-1.2, 1.2),
                         histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k",
                         label=label
                     )
-                    #residual_axs[idirection][tested_chamber].scatter(bins, points, marker="o", label=label)
+                    #residual_cls_axs[idirection][tested_chamber].scatter(bins, points, marker="o", label=label)
                     xvalues = np.linspace(bins[0], bins[-1], 1000)
-                    residual_axs[idirection][tested_chamber].plot(xvalues, gauss2(xvalues, *coeff))
-                    residual_axs[idirection][tested_chamber].set_xlabel(f"{directions[idirection]} residual (mm)")
-                    #residual_axs[idirection][tested_chamber].legend()
+                    residual_cls_axs[idirection][tested_chamber].plot(xvalues, gauss2(xvalues, *coeff))
+                    residual_cls_axs[idirection][tested_chamber].set_xlabel(f"{directions[idirection]} residual (mm)")
+                    #residual_cls_axs[idirection][tested_chamber].legend()
 
                     if idirection==0:
-                        residual_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+                        residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
 
-                    # residual_axs[idirection][tested_chamber].text(
+                    # residual_cls_axs[idirection][tested_chamber].text(
                     #     2, (1-0.1*parity)*1e6,
                     #     f"Space resolution {space_resolution:1.0f} µm",
                     #     horizontalalignment="right",
@@ -143,7 +144,7 @@ def main():
         spres_fig.tight_layout()
         spres_fig.savefig(os.path.join(odir, "space_resolution.png"))
 
-        residual_fig.tight_layout()
-        residual_fig.savefig(os.path.join(odir, "residuals.png"))
+        residual_cls_fig.tight_layout()
+        residual_cls_fig.savefig(os.path.join(odir, "residuals.png"))
 
 if __name__=='__main__': main()

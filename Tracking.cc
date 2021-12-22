@@ -196,12 +196,6 @@ int main (int argc, char** argv) {
 
       rechitTree->GetEntry(nevt);
 
-      /*for (int i=0; i<nChambers; i++) {
-        graphX.RemovePoint(i);
-        graphY.RemovePoint(i);
-      }*/
-      track.clear();
-
       // process only if single rechit per chamber per event:
       if (nrechits2d!=nChambers) continue;
       bool isGoldenEvent = true;
@@ -213,19 +207,11 @@ int main (int argc, char** argv) {
       nentriesGolden++;
 
       for (int testedChamber=0; testedChamber<nChambers; testedChamber++) {
-        /*// reset track:
-        trackX.SetParameters(0., 0.);
-        trackY.SetParameters(0., 0.);*/
         track.clear();
         // loop over rechits and make track:
         for (int irechit=0; irechit<nrechits2d; irechit++) {
           chamber = vecRechit2DChamber->at(irechit);
           if (chamber!=testedChamber) {
-            /*// add to graph for fitting:
-            graphX.SetPoint(graphX.GetN(), zChamber[chamber], vecRechit2D_X_Center->at(irechit));
-            graphY.SetPoint(graphY.GetN(), zChamber[chamber], vecRechit2D_Y_Center->at(irechit));
-            graphX.SetPointError(graphX.GetN()-1, 1, vecRechit2D_X_Error->at(irechit)/0.866*0.07217);
-            graphY.SetPointError(graphY.GetN()-1, 1, vecRechit2D_Y_Error->at(irechit)/0.866*0.07217);*/
             track.addRechit(Rechit2D(chamber,
               Rechit(chamber, 0, vecRechit2D_X_Center->at(irechit), vecRechit2D_X_ClusterSize->at(irechit)),
               Rechit(chamber, 1, vecRechit2D_Y_Center->at(irechit), vecRechit2D_Y_ClusterSize->at(irechit))
@@ -240,12 +226,15 @@ int main (int argc, char** argv) {
             rechits2D_Y_Error[testedChamber] = vecRechit2D_Y_ClusterSize->at(irechit)*0.07217;
           }
         }
-        // fit track and propagate to chamber under test:
+        // fit and save track:
         track.fit();
+        trackFitChi2[testedChamber] = track.getChi2X() + track.getChi2Y();
         tracks_X_slope[testedChamber] = track.getSlopeX();
         tracks_Y_slope[testedChamber] = track.getSlopeY();
         tracks_X_intercept[testedChamber] = track.getInterceptX();
         tracks_Y_intercept[testedChamber] = track.getInterceptY();
+
+        // propagate to chamber under test:
         prophits2D_X[testedChamber] = track.propagateX(zChamber[testedChamber]);
         prophits2D_Y[testedChamber] = track.propagateY(zChamber[testedChamber]);
         prophits2D_X_Error[testedChamber] = track.propagationErrorX(zChamber[testedChamber]);
@@ -258,10 +247,9 @@ int main (int argc, char** argv) {
         // tracks_X_intercept[testedChamber] = trackX.GetParameter(1);
         // tracks_Y_intercept[testedChamber] = trackY.GetParameter(1);
 
-        /*trackFitIsValid[testedChamber] = fitStatus1->IsValid() && fitStatus2->IsValid();
-        trackFitChi2[testedChamber] = fitStatus1->Chi2() * fitStatus2->Chi2();
-        if (!trackFitIsValid[testedChamber]) fitBadCount++;
-        else fitGoodCount++;*/
+        //trackFitIsValid[testedChamber] = fitStatus1->IsValid() && fitStatus2->IsValid();
+        //if (!trackFitIsValid[testedChamber]) fitBadCount++;
+        //else fitGoodCount++;
 
         // prophits2D_X[testedChamber] = trackX.Eval(zChamber[testedChamber]);
         // prophits2D_Y[testedChamber] = trackY.Eval(zChamber[testedChamber]);

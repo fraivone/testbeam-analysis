@@ -1,14 +1,11 @@
-#include<vector>
-
-#include "Minuit2/FCNBase.h"
-#include "TObject.h"
+#include <vector>
 
 #include "Rechit.h"
 
 #ifndef DEF_TRACK
 #define DEF_TRACK
 
-class Track : public TObject {
+class Track {
 
     public:
 
@@ -23,14 +20,20 @@ class Track : public TObject {
         double propagate(double);
         double propagationError(double);
 
+        std::vector<double> getRechitZ();
+        std::vector<double> getRechitCenters();
+        std::vector<double> getRechitErrors();
         double getIntercept() {return fIntercept;}
         double getSlope() {return fSlope;}
         double getInterceptError() {return fInterceptError;}
         double getSlopeError() {return fSlopeError;}
+        double getChi2() {return fChi2;}
 
     private:
+    
         double fIntercept, fSlope;
         double fInterceptError, fSlopeError;
+        double fChi2;
 };
 
 #endif

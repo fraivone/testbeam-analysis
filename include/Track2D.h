@@ -29,8 +29,11 @@ class Track2D {
         double getInterceptErrorY() {return fTrackY.getInterceptError();}
         double getSlopeErrorX() {return fTrackX.getSlopeError();}
         double getSlopeErrorY() {return fTrackY.getSlopeError();}
+        double getChi2X() {return fTrackX.getChi2();}
+        double getChi2Y() {return fTrackY.getChi2();}
 
     private:
+    
         Track fTrackX, fTrackY;
 };
 

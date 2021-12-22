@@ -2,26 +2,16 @@
 #include <vector>
 #include <math.h>
 
-#include <TMinuit.h>
+#include "Minuit2/MnUserParameters.h"
+#include "Minuit2/MnPrint.h"
+#include "Minuit2/MnMigrad.h"
+#include "Minuit2/FunctionMinimum.h"
 
 #include "Rechit.h"
 #include "Track.h"
+#include "LinearFcn.h"
 
-TMinuit trackMinuit(2);
-// static linear track function
-void linearFunctionChi2(int &npar, double *gin, double &chi2, double *par, int iflag) {
-    double q = par[0], m = par[1];
-    chi2 = 0.;
-    Track *track = (Track *) trackMinuit.GetObjectFit();
-    for (Rechit rechit:track->fRechits) {
-        std::cout << "CHI2 is " << chi2 << std::endl;
-        chi2 += pow(rechit.getCenter()-m*rechit.getZ()-q, 2)/pow(rechit.getError(), 2);
-    }
-}
-
-Track::Track() {
-    trackMinuit.SetFCN(linearFunctionChi2);
-}
+Track::Track() {}
 
 void Track::addRechit(Rechit rechit) {
     fRechits.push_back(rechit);
@@ -31,22 +21,44 @@ void Track::clear() {
     fRechits.clear();
 }
 
+std::vector<double> Track::getRechitCenters() {
+    std::vector<double> centers;
+    for (auto rechit:fRechits) {
+        centers.push_back(rechit.getCenter());
+    }
+    return centers;
+}
+
+std::vector<double> Track::getRechitZ() {
+    std::vector<double> z;
+    for (auto rechit:fRechits) {
+        z.push_back(rechit.getZ());
+    }
+    return z;
+}
+
+std::vector<double> Track::getRechitErrors() {
+    std::vector<double> errors;
+    for (auto rechit:fRechits) {
+        errors.push_back(rechit.getError());
+    }
+    return errors;
+}
+
 void Track::fit() {
-    trackMinuit.SetObjectFit(this);
-    trackMinuit.SetFCN(linearFunctionChi2);
-    trackMinuit.DefineParameter(0, "intercept", 0., 0., 0., 0.);
-    trackMinuit.DefineParameter(1, "slope", 0., 0., 0., 0.);
-    
-    double arglist[10];
-    arglist[0] = 0.5;
-    int ierflg = 0;
-    trackMinuit.mnexcm("SET ERR",arglist,1,ierflg);
-    trackMinuit.mnexcm("MIGRAD",arglist,0,ierflg);
-    trackMinuit.mnexcm("MINOS",arglist,0,ierflg);
-    //trackMinuit.Command("MIGRAD");
-    //trackMinuit.Command("MIGRAD");
-    trackMinuit.GetParameter(0, fIntercept, fInterceptError);
-    trackMinuit.GetParameter(1, fSlope, fSlopeError);
+    LinearFcn chi2Fcn(getRechitCenters(), getRechitZ(), getRechitErrors());
+        
+    ROOT::Minuit2::MnUserParameters initialPars;
+    initialPars.Add("intercept", 0., 0.1);
+    initialPars.Add("slope", 0., 0.1);
+    ROOT::Minuit2::MnMigrad migrad(chi2Fcn, initialPars);
+    ROOT::Minuit2::FunctionMinimum min = migrad();
+
+    fIntercept = migrad.Value("intercept");
+    fSlope = migrad.Value("slope");
+    fInterceptError = migrad.Error("intercept");
+    fSlopeError = migrad.Error("slope");
+    fChi2 = min.Fval();
 }
 
 double Track::propagate(double z) {

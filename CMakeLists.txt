@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(unpacker)
 
-find_package(ROOT REQUIRED Minuit)
+find_package(ROOT REQUIRED Minuit2)
 include(${ROOT_USE_FILE})
 
 include_directories($ENV{ANALYSIS_HOME}/include)
@@ -13,6 +13,7 @@ set(sources
     $ENV{ANALYSIS_HOME}/src/TestBeamMapping.cc
     $ENV{ANALYSIS_HOME}/src/Track2D.cc
     $ENV{ANALYSIS_HOME}/src/Track.cc
+    $ENV{ANALYSIS_HOME}/src/LinearFcn.cc
     $ENV{ANALYSIS_HOME}/src/Rechit2D.cc
     $ENV{ANALYSIS_HOME}/src/Rechit.cc
     $ENV{ANALYSIS_HOME}/src/Cluster.cc
