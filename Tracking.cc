@@ -218,6 +218,8 @@ int main (int argc, char** argv) {
     int fitGoodCount = 0, fitBadCount = 0;
     TFitResultPtr fitStatus1, fitStatus2;
 
+    double efficiencyGe21 = 0.; // TEMP HACK, REMOVE!
+
     std::cout << nentries << " total events" <<  std::endl;
     if (max_events>0) nentries = max_events;
     progressbar bar(nentries);
@@ -335,12 +337,15 @@ int main (int argc, char** argv) {
         std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
         std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
         std::cout << std::endl;
-        std::cout << "    " << "prophit ";
+        std::cout << "    " << "prophit " << "eta=" << hit.getEta() << ", ";
         std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
         std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
         std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
         std::cout << std::endl;
       }
+      
+      // HACK TO CALCULATE EFFICIENCY, REMOVE!
+      if (vecRechitChamber->size()>0) efficiencyGe21+=1.;
       
       // save all 1D rechits local coordinates
       for (int iRechit=0; iRechit<vecRechitChamber->size(); iRechit++) {
@@ -355,7 +360,7 @@ int main (int argc, char** argv) {
         rechitsLocalR.push_back(hit.getLocalR());
         rechitsLocalPhi.push_back(hit.getLocalPhi());
         if (verbose) {
-          std::cout << "    " << "rechit  ";
+          std::cout << "    " << "rechit  " << "eta=" << hit.getEta() << ", ";
           std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
           std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
           std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
@@ -366,6 +371,11 @@ int main (int argc, char** argv) {
       trackTree.Fill();
     }
     std::cout << std::endl;
+
+    std::cout << "Efficiency GE2/1 ";
+    std::cout << efficiencyGe21 << "/" << nentriesGolden << " = ";
+    efficiencyGe21 /= (double) nentriesGolden;
+    std::cout << efficiencyGe21 << std::endl;
 
     std::cout << "Golden entries " << nentriesGolden << std::endl;
     std::cout << "Failed fits " << fitBadCount << std::endl;
