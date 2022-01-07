@@ -23,8 +23,8 @@ void Rechit2D::setGlobalPosition(double x, double y, double z) {
     fRechitY.setGlobalPosition(y, z);
 }
 
-double Rechit2D::getCenterX() { return fRechitX.getCenter(); }
-double Rechit2D::getCenterY() { return fRechitY.getCenter(); }
+double Rechit2D::getLocalX() { return fRechitX.getCenter(); }
+double Rechit2D::getLocalY() { return fRechitY.getCenter(); }
 double Rechit2D::getErrorX() { return fRechitX.getError(); }
 double Rechit2D::getErrorY() { return fRechitY.getError(); }
 double Rechit2D::getClusterSizeX() { return fRechitX.getClusterSize(); }

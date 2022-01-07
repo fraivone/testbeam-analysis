@@ -10,6 +10,7 @@ DetectorLarge::DetectorLarge(int oh, int chamber, double baseNarrow, double base
     fHeight = height;
     fNumberPartitions = nEta;
     fNumberStrips = nStrips;
+    fEtaHeight = height/nEta;
 
     fPartitionYs.reserve(fNumberPartitions);
     fPartitionYTops.reserve(fNumberPartitions);
@@ -17,8 +18,8 @@ DetectorLarge::DetectorLarge(int oh, int chamber, double baseNarrow, double base
     fPartitionStripPitches.reserve(fNumberPartitions);
     fPartitionStripPitchesSqrt12.reserve(fNumberPartitions);
     for (int eta=0; eta<fNumberPartitions; eta++) {
-        fPartitionYs[eta] = fHeight/fNumberPartitions*(0.5 + (double)(fNumberPartitions-eta));
-        fPartitionYTops[eta] = fPartitionYs[eta] + 0.5*fHeight/fNumberPartitions;
+        fPartitionYs[eta] = fEtaHeight*(0.5 + (double)(fNumberPartitions-eta-1));
+        fPartitionYTops[eta] = fPartitionYs[eta] + 0.5*fEtaHeight;
         fPartitionWidths[eta] = fBaseNarrow + fPartitionYs[eta]*(fBaseWide-fBaseNarrow)/fHeight;
         fPartitionStripPitches[eta] = fPartitionWidths[eta] / fNumberStrips;
         fPartitionStripPitchesSqrt12[eta] = fPartitionStripPitches[eta] * 0.288675;

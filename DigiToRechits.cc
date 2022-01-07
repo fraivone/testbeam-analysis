@@ -55,7 +55,7 @@ int main (int argc, char** argv) {
     DetectorTracker(3, 2, 89.5, 89.5, 358),
     DetectorTracker(3, 3, 89.5, 89.5, 358),
   };
-  DetectorLarge detectorGe21(0, 4, 50.1454, 65.9804, 43.06, 4, 384);
+  DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
   // TODO: add ME0
 
   // digi variables
@@ -208,6 +208,12 @@ int main (int argc, char** argv) {
         vecRechitError.push_back(rechit.getError());
         vecRechitClusterSize.push_back(rechit.getClusterSize());
         nrechits++;
+        if (verbose) {
+            std::cout << "  Chamber GE2/1";
+            std::cout << " eta=" << clustersInEvent[icluster].getEta();
+            std::cout << " local (" << rechit.getCenter() << ",";
+            std::cout << rechit.getY() << ")" << std::endl;
+          }
       } else {
         // for tracker, build 2D rechits:
         chamber1 = clustersInEvent[icluster].getChamber();
@@ -227,8 +233,8 @@ int main (int argc, char** argv) {
           rechit2D = detectorTrackers[chamber1].createRechit2D(clustersInEvent[icluster], clustersInEvent[jcluster]);
 
           vecRechit2DChamber.push_back(chamber1);
-          vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
-          vecRechit2D_Y_Center.push_back(rechit2D.getCenterY());
+          vecRechit2D_X_Center.push_back(rechit2D.getLocalX());
+          vecRechit2D_Y_Center.push_back(rechit2D.getLocalY());
           vecRechit2D_X_Error.push_back(rechit2D.getErrorX());
           vecRechit2D_Y_Error.push_back(rechit2D.getErrorY());
           vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
@@ -237,8 +243,8 @@ int main (int argc, char** argv) {
 
           if (verbose) {
             std::cout << "  Chamber " << chamber1;
-            std::cout << " (" << rechit2D.getCenterX() << ",";
-            std::cout << rechit2D.getCenterY() << ")" << std::endl;
+            std::cout << " local (" << rechit2D.getLocalX() << ",";
+            std::cout << rechit2D.getLocalY() << ")" << std::endl;
           }
         }
       }

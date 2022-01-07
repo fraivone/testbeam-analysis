@@ -17,6 +17,14 @@ Hit::Hit(DetectorGeometry *detector, double x, double y, double z, double errX, 
     setDetector(detector);
 }
 
+Hit Hit::fromLocal(DetectorGeometry *detector, double localX, double localY, double errX, double errY, double errZ) {
+    return Hit(
+        detector,
+        localX+detector->getPositionX(), localY+detector->getPositionY(), detector->getPositionZ(),
+        errX, errY, errZ 
+    );
+}
+
 void Hit::setDetector(DetectorGeometry *detector) {
     fDetector = detector;
     // calculate local coordinates:
@@ -28,7 +36,6 @@ void Hit::setDetector(DetectorGeometry *detector) {
 
 int Hit::getEta() {
     // calculate eta partition of hit from detector geometry
-    int eta = 1;
-    while (fLocalPosition[1]>((DetectorLarge*)fDetector)->getYTop(eta)) eta++;
-    return eta;
+    return ((DetectorLarge*)fDetector)->getNEta() - 
+    (int)(getLocalY()/((DetectorLarge*)fDetector)->getEtaHeight());
 }

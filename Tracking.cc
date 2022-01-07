@@ -73,18 +73,20 @@ int main (int argc, char** argv) {
       DetectorTracker(3, 2, 89.5, 89.5, 358),
       DetectorTracker(3, 3, 89.5, 89.5, 358),
     };
-    DetectorLarge detectorGe21(0, 4, 50.1454, 65.9804, 43.06, 4, 384);
+    DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
     // TODO: add ME0
 
     detectorTrackers[0].setPosition(-0.269035, -2.06244, -(697+254+294));
     detectorTrackers[1].setPosition(+0.292939, -0.207079, -(254+294));
     detectorTrackers[2].setPosition(-0.332708, +0.577936, 170.);
     detectorTrackers[3].setPosition(+0.0905448, +0.108215, 170.+697.);
-    detectorGe21.setPosition(0., -21.5, 0.);
+    //detectorGe21.setPosition(0., -215., 0.);
+    detectorGe21.setPosition(0., 0., 0.);
 
     // rechit variables
     int nrechits;
     std::vector<int> *vecRechitChamber = new std::vector<int>();
+    std::vector<int> *vecRechitEta = new std::vector<int>();
     std::vector<double> *vecRechitX = new std::vector<double>();
     std::vector<double> *vecRechitY = new std::vector<double>();
     std::vector<double> *vecRechitError = new std::vector<double>();
@@ -101,6 +103,7 @@ int main (int argc, char** argv) {
     // rechit branches
     rechitTree->SetBranchAddress("nrechits", &nrechits);
     rechitTree->SetBranchAddress("rechitChamber", &vecRechitChamber);
+    rechitTree->SetBranchAddress("rechitEta", &vecRechitEta);
     rechitTree->SetBranchAddress("rechitX", &vecRechitX);
     rechitTree->SetBranchAddress("rechitY", &vecRechitY);
     rechitTree->SetBranchAddress("rechitError", &vecRechitError);
@@ -346,13 +349,12 @@ int main (int argc, char** argv) {
       
       // HACK TO CALCULATE EFFICIENCY, REMOVE!
       if (vecRechitChamber->size()>0) efficiencyGe21+=1.;
-      
+
       // save all 1D rechits local coordinates
       for (int iRechit=0; iRechit<vecRechitChamber->size(); iRechit++) {
         chamber = vecRechitChamber->at(iRechit);
-        hit = Hit(&detectorGe21,
-          vecRechitX->at(iRechit), vecRechitY->at(iRechit), detectorGe21.getPositionZ(),
-          0., 0., 0.
+        hit = Hit::fromLocal(&detectorGe21,
+          vecRechitX->at(iRechit), vecRechitY->at(iRechit), 0., 0., 0.
         );
         rechitsEta.push_back(hit.getEta());
         rechitsLocalX.push_back(hit.getLocalX());
@@ -360,7 +362,7 @@ int main (int argc, char** argv) {
         rechitsLocalR.push_back(hit.getLocalR());
         rechitsLocalPhi.push_back(hit.getLocalPhi());
         if (verbose) {
-          std::cout << "    " << "rechit  " << "eta=" << hit.getEta() << ", ";
+          std::cout << "    " << "rechit  " << "eta=" << vecRechitEta->at(iRechit) << ", ";
           std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
           std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
           std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();

@@ -15,8 +15,8 @@ class Rechit2D {
         // Rechit2D(int, Cluster, Cluster);
         Rechit2D(int, Rechit, Rechit);
 
-        double getCenterX();
-        double getCenterY();
+        double getLocalX();
+        double getLocalY();
         double getErrorX();
         double getErrorY();
         double getClusterSizeX();
@@ -29,7 +29,7 @@ class Rechit2D {
         double getGlobalZ() { return fRechitX.getGlobalZ(); }
 
         void print() {
-            std::cout << fChamber << "," << getCenterX() << "," << getCenterY() << "," << getErrorX() << "," << getErrorY() << std::endl;
+            std::cout << fChamber << "," << getLocalX() << "," << getLocalY() << "," << getErrorX() << "," << getErrorY() << std::endl;
         }
 };
 

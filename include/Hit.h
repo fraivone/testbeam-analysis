@@ -7,8 +7,10 @@ class Hit {
 
     public:
         Hit() {}
-        Hit(DetectorGeometry *detector, double x, double y, double z, double errX, double errY, double errZ);
         Hit(double x, double y, double z, double errX, double errY, double errZ);
+        Hit(DetectorGeometry *detector, double x, double y, double z, double errX, double errY, double errZ);
+        
+        static Hit fromLocal(DetectorGeometry *detector, double x, double y, double errX, double errY, double errZ);
 
         void setDetector(DetectorGeometry *detector);
 
