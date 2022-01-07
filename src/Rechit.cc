@@ -4,24 +4,35 @@
 
 #include "Rechit.h"
 #include "Cluster.h"
-#include "Corrections.h"
+#include "Geometry.h"
 
-Rechit::Rechit(int chamber, int direction, Cluster cluster) {
-    fChamber = chamber;
-    fCenter = mappingStart[direction] + mappingScale[direction]*cluster.getCenter()*0.25 - corrections[direction][chamber];
-    fClusterSize = cluster.getSize();
-    fError = fClusterSize*PITCH_SQRT_12;
-}
+// Rechit::Rechit(int chamber, int direction, Cluster cluster) {
+//     fChamber = chamber;
+//     fCenter = mappingStart[chamber][direction] + mappingScale[chamber][direction]*cluster.getCenter()*mappingPitch[chamber] - mappingCorrections[chamber][direction];
+//     fClusterSize = cluster.getSize();
+//     fError = fClusterSize*mappingPitchSqrt12[chamber];
+// }
 
-Rechit::Rechit(int chamber, int direction, double center, int clusterSize) {
+// Rechit::Rechit(int chamber, double center, int clusterSize) {
+//     fChamber = chamber;
+//     fCenter = center;
+//     fClusterSize = clusterSize;
+//     fError = fClusterSize*mappingPitchSqrt12[chamber];
+// }
+
+Rechit::Rechit(int chamber, double center, double error, int clusterSize) {
     fChamber = chamber;
     fCenter = center;
+    fError = error;
     fClusterSize = clusterSize;
-    fError = fClusterSize*PITCH_SQRT_12;
+}
+
+void Rechit::setGlobalPosition(double center, double z) {
+    fGlobalCenter = center;
+    fGlobalZ = z;
 }
 
 double Rechit::getCenter() {return fCenter; }
 double Rechit::getError() {return fError; }
 double Rechit::getClusterSize() {return fClusterSize; }
-double Rechit::getZ() {return zChamber[fChamber]; }
 int Rechit::getChamber() {return fChamber;}

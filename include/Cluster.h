@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "Digi.h"
 
 #ifndef DEF_CLUSTER
@@ -23,14 +25,15 @@ class Cluster {
         int getFirst();
         int getLast();
 
-        static std::vector<Cluster> fromDigis(std::vector<Digi> digis);
+        int getChamber();
+        int getDirection();
 
-        int getChamber() { return (fOh-2)*2 + (fEta-1)/2; }
-        int getDirection() { return (fEta+1) % 2; }
+        static std::vector<Cluster> fromDigis(std::vector<Digi> digis);
     
-        // std::ostream& operator<<(std::ostream &os) {
-        //     return os << fOh << "." << fEta << "." << fFirst << "." << fLast;
-        // }
+        std::ostream& operator<<(std::ostream &os) {
+            return os << fOh << "oh." << fEta << "eta." << fFirst << "first." << fLast << "last";
+        }
+        
         void print() {
             std::cout << fOh << "oh." << fEta << "eta." << fFirst << "first." << fLast << "last" << std::endl;
         }

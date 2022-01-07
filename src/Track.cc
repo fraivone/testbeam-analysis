@@ -24,7 +24,7 @@ void Track::clear() {
 std::vector<double> Track::getRechitCenters() {
     std::vector<double> centers;
     for (auto rechit:fRechits) {
-        centers.push_back(rechit.getCenter());
+        centers.push_back(rechit.getGlobalCenter());
     }
     return centers;
 }
@@ -32,7 +32,7 @@ std::vector<double> Track::getRechitCenters() {
 std::vector<double> Track::getRechitZ() {
     std::vector<double> z;
     for (auto rechit:fRechits) {
-        z.push_back(rechit.getZ());
+        z.push_back(rechit.getGlobalZ());
     }
     return z;
 }
@@ -47,7 +47,7 @@ std::vector<double> Track::getRechitErrors() {
 
 void Track::fit() {
     LinearFcn chi2Fcn(getRechitCenters(), getRechitZ(), getRechitErrors());
-        
+    
     ROOT::Minuit2::MnUserParameters initialPars;
     initialPars.Add("intercept", 0., 0.1);
     initialPars.Add("slope", 0., 0.1);

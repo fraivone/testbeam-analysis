@@ -19,3 +19,11 @@ void Track2D::fit() {
     fTrackX.fit();
     fTrackY.fit();
 }
+
+Hit Track2D::propagate(DetectorGeometry *detector) {
+    return Hit(
+        detector,
+        propagateX(detector), propagateY(detector), detector->getPositionZ(),
+        propagationErrorX(detector), propagationErrorY(detector), 0.
+    );
+}

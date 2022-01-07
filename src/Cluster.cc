@@ -33,6 +33,22 @@ int Cluster::getEta() {return fEta;}
 int Cluster::getFirst() {return fFirst;}
 int Cluster::getLast() {return fLast;}
 
+int Cluster::getChamber() {
+    if (fOh>0) {
+        return (fOh-2)*2 + (fEta-1)/2;
+    } else {
+        return 0;
+    }
+}
+
+int Cluster::getDirection() {
+    if (fOh>0) {
+        return (fEta+1) % 2;
+    } else {
+        return 0;
+    }
+}
+
 std::vector<Cluster> Cluster::fromDigis(std::vector<Digi> digis) {
     std::vector<Cluster> clusters;
 

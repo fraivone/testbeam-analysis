@@ -11,6 +11,8 @@
 
 #include "Digi.h"
 #include "Cluster.h"
+#include "DetectorTracker.h"
+#include "DetectorLarge.h"
 #include "Rechit2D.h"
 
 #include "progressbar.h"
@@ -23,14 +25,19 @@ void interruptHandler(int dummy) {
 int main (int argc, char** argv) {
 
   if (argc<3) {
-    std::cout << "Usage: DigiToRechits ifile ofile" << std::endl;
+    std::cout << "Usage: DigiToRechits ifile ofile [--verbose] [--events n]" << std::endl;
     return 0;
   }
   std::string ifile   = argv[1];
   std::string ofile   = argv[2];
     
   int max_events = -1;
-  if (argc>3) max_events = atoi(argv[3]);
+  bool verbose = false;
+  for (int iarg=0; iarg<argc; iarg++) {
+    std::string arg = argv[iarg];
+    if (arg=="--verbose") verbose = true;
+    else if (arg=="--events") max_events = atoi(argv[iarg+1]); 
+  }
 
   if (max_events > 0) std::cout << "Analyzing " << max_events << " events" << std::endl;
   else std::cout << "Analyzing all events" << std::endl; 
@@ -39,10 +46,19 @@ int main (int argc, char** argv) {
   TFile rechitFile(ofile.c_str(), "RECREATE", "Rechit tree file");
     
   TTree *digiTree = (TTree *) digiFile.Get("outputtree");
-
   TTree rechitTree("rechitTree","rechitTree");
 
-    // digi variables
+  // define detector geometries
+  DetectorTracker detectorTrackers[4] = {
+    DetectorTracker(2, 0, 89.5, 89.5, 358),
+    DetectorTracker(2, 1, 89.5, 89.5, 358),
+    DetectorTracker(3, 2, 89.5, 89.5, 358),
+    DetectorTracker(3, 3, 89.5, 89.5, 358),
+  };
+  DetectorLarge detectorGe21(0, 4, 50.1454, 65.9804, 43.06, 4, 384);
+  // TODO: add ME0
+
+  // digi variables
   int nhits;
   std::vector<int> *vecDigiOH = new std::vector<int>();
   std::vector<int> *vecDigiEta = new std::vector<int>(); // even for x, odd for y
@@ -50,13 +66,22 @@ int main (int argc, char** argv) {
   std::vector<int> *vecDigiDirection = new std::vector<int>(); // 0 for x, 1 for y
   std::vector<int> *vecDigiStrip = new std::vector<int>(); // 0 to 357
 
-    // cluster variables
+  // cluster variables
   int nclusters;
   std::vector<int> vecClusterOH;
   std::vector<int> vecClusterEta;
   std::vector<int> vecClusterCenter;
   std::vector<int> vecClusterFirst;
   std::vector<int> vecClusterSize;
+
+  // rechits variables
+  int nrechits;
+  std::vector<int> vecRechitChamber;
+  std::vector<int> vecRechitEta;
+  std::vector<double> vecRechitX;
+  std::vector<double> vecRechitY;
+  std::vector<double> vecRechitError;
+  std::vector<double> vecRechitClusterSize;
 
   // rechits 2d variables
   int nrechits2d;
@@ -68,10 +93,11 @@ int main (int argc, char** argv) {
   std::vector<double> vecRechit2D_X_ClusterSize;
   std::vector<double> vecRechit2D_Y_ClusterSize;
 
-    // support variables
+  // support variables
   int oh, eta;
-  int chamber1, chamber2;
+  int chamber, chamber1, chamber2;
   int direction1, direction2;
+  Rechit rechit;
   Rechit2D rechit2D;
 
   std::vector<Digi> digisInEvent;
@@ -92,6 +118,15 @@ int main (int argc, char** argv) {
   rechitTree.Branch("clusterCenter", &vecClusterCenter);
   rechitTree.Branch("clusterFirst", &vecClusterFirst);
   rechitTree.Branch("clusterSize", &vecClusterSize);
+
+  // rechit branches
+  rechitTree.Branch("nrechits", &nrechits, "nrechits/I");
+  rechitTree.Branch("rechitChamber", &vecRechitChamber);
+  rechitTree.Branch("rechitEta", &vecRechitEta);
+  rechitTree.Branch("rechitX", &vecRechitX);
+  rechitTree.Branch("rechitY", &vecRechitY);
+  rechitTree.Branch("rechitError", &vecRechitError);
+  rechitTree.Branch("rechitClusterSize", &vecRechitClusterSize);
 
   // rechit2D branches
   rechitTree.Branch("nrechits2d", &nrechits2d, "nrechits2d/I");
@@ -114,7 +149,9 @@ int main (int argc, char** argv) {
   signal(SIGINT, interruptHandler);
   for (int nevt=0; (!isInterrupted) && digiTree->LoadTree(nevt)>=0; ++nevt) {
     if ((max_events>0) && (nevt>max_events)) break;
-    bar.update();
+    
+    if (verbose) std::cout << "Event " << nevt << "/" << nentries << std::endl;
+    else bar.update();
     //if ( nevt%1000==0 ) std::cout << "Unpacking event " << nevt << "\t\t\t\r";
 
     digiTree->GetEntry(nevt);
@@ -125,14 +162,13 @@ int main (int argc, char** argv) {
     vecClusterFirst.clear();
     vecClusterSize.clear();
 
-    digisInEvent.clear();
-    for (int ihit=0; ihit<nhits; ihit++)
-      digisInEvent.push_back(Digi(
-        vecDigiOH->at(ihit),
-        vecDigiEta->at(ihit),
-        vecDigiStrip->at(ihit)
-      ));
-    clustersInEvent = Cluster::fromDigis(digisInEvent);
+    nrechits = 0;
+    vecRechitChamber.clear();
+    vecRechitEta.clear();
+    vecRechitX.clear();
+    vecRechitY.clear();
+    vecRechitError.clear();
+    vecRechitClusterSize.clear();
 
     nrechits2d = 0;
     vecRechit2DChamber.clear();
@@ -142,6 +178,15 @@ int main (int argc, char** argv) {
     vecRechit2D_Y_Error.clear();
     vecRechit2D_X_ClusterSize.clear();
     vecRechit2D_Y_ClusterSize.clear();
+
+    digisInEvent.clear();
+    for (int ihit=0; ihit<nhits; ihit++)
+      digisInEvent.push_back(Digi(
+        vecDigiOH->at(ihit),
+        vecDigiEta->at(ihit),
+        vecDigiStrip->at(ihit)
+      ));
+    clustersInEvent = Cluster::fromDigis(digisInEvent);
 
     nclusters = clustersInEvent.size();
     for (int icluster=0; icluster<nclusters; icluster++) {
@@ -153,7 +198,16 @@ int main (int argc, char** argv) {
 
       if (clustersInEvent[icluster].getOh() == 0) {
         // for large chamber, build 1D rechits:
-        
+        int chamber = clustersInEvent[icluster].getChamber();
+        //rechit = Rechit(chamber, 0, clustersInEvent[icluster]);
+        rechit = detectorGe21.createRechit(clustersInEvent[icluster]);
+        vecRechitChamber.push_back(chamber);
+        vecRechitEta.push_back(clustersInEvent[icluster].getEta());
+        vecRechitX.push_back(rechit.getCenter());
+        vecRechitY.push_back(rechit.getY());
+        vecRechitError.push_back(rechit.getError());
+        vecRechitClusterSize.push_back(rechit.getClusterSize());
+        nrechits++;
       } else {
         // for tracker, build 2D rechits:
         chamber1 = clustersInEvent[icluster].getChamber();
@@ -169,7 +223,8 @@ int main (int argc, char** argv) {
           direction2 = clustersInEvent[jcluster].getDirection();
           if (direction1==direction2) continue;
           
-          rechit2D = Rechit2D(chamber1, clustersInEvent[icluster], clustersInEvent[jcluster]);
+          //rechit2D = Rechit2D(chamber1, clustersInEvent[icluster], clustersInEvent[jcluster]);
+          rechit2D = detectorTrackers[chamber1].createRechit2D(clustersInEvent[icluster], clustersInEvent[jcluster]);
 
           vecRechit2DChamber.push_back(chamber1);
           vecRechit2D_X_Center.push_back(rechit2D.getCenterX());
@@ -179,6 +234,12 @@ int main (int argc, char** argv) {
           vecRechit2D_X_ClusterSize.push_back(rechit2D.getClusterSizeX());
           vecRechit2D_Y_ClusterSize.push_back(rechit2D.getClusterSizeY());
           nrechits2d++;
+
+          if (verbose) {
+            std::cout << "  Chamber " << chamber1;
+            std::cout << " (" << rechit2D.getCenterX() << ",";
+            std::cout << rechit2D.getCenterY() << ")" << std::endl;
+          }
         }
       }
     }
