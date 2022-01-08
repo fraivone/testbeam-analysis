@@ -121,7 +121,6 @@ int main (int argc, char** argv) {
     const int nChambers = 4;
     // track variables
     std::array<double, nChambers> trackFitChi2;
-    std::array<int, nChambers> trackFitIsValid;
     std::array<double, nChambers> tracks_X_slope;
     std::array<double, nChambers> tracks_Y_slope;
     std::array<double, nChambers> tracks_X_intercept;
@@ -161,7 +160,6 @@ int main (int argc, char** argv) {
     double propErrorX, propErrorY;
 
     // track branches
-    trackTree.Branch("trackFitIsValid", &trackFitIsValid);
     trackTree.Branch("trackFitChi2", &trackFitChi2);
     trackTree.Branch("tracks_X_slope", &tracks_X_slope);
     trackTree.Branch("tracks_Y_slope", &tracks_Y_slope);
@@ -218,8 +216,6 @@ int main (int argc, char** argv) {
 
     int nentries = rechitTree->GetEntries();
     int nentriesGolden = 0;
-    int fitGoodCount = 0, fitBadCount = 0;
-    TFitResultPtr fitStatus1, fitStatus2;
 
     double efficiencyGe21 = 0.; // TEMP HACK, REMOVE!
 
@@ -236,6 +232,8 @@ int main (int argc, char** argv) {
       rechitsChamber.clear();
       prophitsChamber.clear();
       rechitsEta.clear();
+      rechitsLocalX.clear();
+      rechitsLocalY.clear();
       rechitsLocalR.clear();
       rechitsLocalPhi.clear();
       prophitsEta.clear();
@@ -243,6 +241,8 @@ int main (int argc, char** argv) {
       prophitsGlobalY.clear();
       prophitsXError.clear();
       prophitsYError.clear();
+      prophitsLocalX.clear();
+      prophitsLocalY.clear();
       prophitsLocalR.clear();
       prophitsLocalPhi.clear();
 
@@ -375,13 +375,11 @@ int main (int argc, char** argv) {
     std::cout << std::endl;
 
     std::cout << "Efficiency GE2/1 ";
-    std::cout << efficiencyGe21 << "/" << nentriesGolden << " = ";
+    std::cout << (int) efficiencyGe21 << "/" << nentriesGolden << " = ";
     efficiencyGe21 /= (double) nentriesGolden;
     std::cout << efficiencyGe21 << std::endl;
 
     std::cout << "Golden entries " << nentriesGolden << std::endl;
-    std::cout << "Failed fits " << fitBadCount << std::endl;
-    std::cout << "Successful fits " << fitGoodCount << std::endl;
 
     trackTree.Write();
     trackFile.Close();
