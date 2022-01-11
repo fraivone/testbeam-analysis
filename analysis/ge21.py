@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 import uproot
 import numpy as np
+import awkward as ak
 import scipy
 from scipy.optimize import curve_fit
 
@@ -67,18 +68,101 @@ def main():
         if args.verbose: track_tree.show()
 
         print("Reading tree...")
-        rechits_x = np.vstack(track_tree["rechits2D_X"].array(library="np", entry_stop=args.events)).T
-        rechits_y = np.vstack(track_tree["rechits2D_Y"].array(library="np", entry_stop=args.events)).T
-        prophits_x = np.vstack(track_tree["prophits2D_X"].array(library="np", entry_stop=args.events)).T
-        prophits_y = np.vstack(track_tree["prophits2D_Y"].array(library="np", entry_stop=args.events)).T
+        rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
+        prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
+        rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
+        prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
+        rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
+        rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
+        prophits_x = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
+        prophits_y = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
         residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
-        rechits_x_error = np.vstack(track_tree["rechits2D_X_Error"].array(library="np", entry_stop=args.events)).T
-        rechits_y_error = np.vstack(track_tree["rechits2D_Y_Error"].array(library="np", entry_stop=args.events)).T
-        cluster_size_x = np.vstack(track_tree["rechits2D_X_ClusterSize"].array(library="np", entry_stop=args.events)).T
-        cluster_size_y = np.vstack(track_tree["rechits2D_Y_ClusterSize"].array(library="np", entry_stop=args.events)).T
-        prophits_x_error = np.vstack(track_tree["prophits2D_X_Error"].array(library="np", entry_stop=args.events)).T
-        prophits_y_error = np.vstack(track_tree["prophits2D_Y_Error"].array(library="np", entry_stop=args.events)).T
+        vec_size = np.vectorize(lambda x: x.size)
+        vec_argmin = np.vectorize(lambda x:x.argmin())
+        nonzero_mask = ak.count(rechits_x, axis=1)!=0
+        good_events = len(rechits_x[nonzero_mask])
+        print(f"Efficiency {good_events/len(rechits_x):1.2f}")
+
+        eta_fig, eta_axs = plt.subplots(nrows=1, ncols=3, figsize=(36,9))
+        #prophits_eta = 4 - np.floor(prophits_y/107.7)
+        eta_mask = ak.count(rechits_eta, axis=1)==1
+        rechits_eta_single, prophits_eta_single = ak.flatten(rechits_eta[eta_mask]), prophits_eta[eta_mask]
+        eta_axs[0].hist(
+            rechits_eta_single, bins=10, range=(0.5,10.5),
+            histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
+        )
+        eta_axs[1].hist(
+            prophits_eta_single, bins=10, range=(0.5,10.5),
+            histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
+        )
+        eta_axs[2].hist(
+            prophits_eta_single-rechits_eta_single, bins=10, range=(0.5,10.5),
+            histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
+        )
+        print("Mean", ak.mean(rechits_eta_single-prophits_eta_single))
+        eta_fig.tight_layout()
+        eta_fig.savefig(os.path.join(args.odir, "eta.png"))
+
+        residual_fig, residual_axs = plt.subplots(nrows=2, ncols=1, figsize=(12,18))
+        residual_rechit_fig, residual_rechit_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
+        residual_prophit_fig, residual_prophit_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
+        ranges = [(-200, -100), (-300, -150)]
+        for idirection,residuals in enumerate([residuals_x, residuals_y]):
+            direction = ["x", "y"][idirection]
+            idirection_other = int(not idirection)
+            direction_other = ["x", "y"][idirection_other]
+
+            rechits = [rechits_x,rechits_y][idirection]
+            prophits = [prophits_x,prophits_y][idirection]
+            # prophits = [prophits_x,prophits_y][idirection][ak.count(residuals, axis=1)>0]
+            # rechits = [rechits_x,rechits_y][idirection][ak.count(residuals, axis=1)>0]
+            # residuals = residuals[ak.count(residuals, axis=1)>0]
+            # min_residual_mask = ak.flatten(ak.argmin(abs(residuals), axis=1), axis=0)
+            # residuals = residuals[np.arange(ak.num(residuals, axis=0)),min_residual_mask]
+            # rechits = rechits[np.arange(ak.num(rechits, axis=0)),min_residual_mask]
+
+            single_hit_mask = ak.count(rechits_x, axis=1)==1
+            prophits = prophits[single_hit_mask]
+            rechits = ak.flatten(rechits[single_hit_mask])
+            residuals = ak.flatten(residuals[single_hit_mask])
+
+            residual_axs[idirection].hist(
+                residuals, bins=100, range=ranges[idirection],
+                histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
+            )
+            residual_axs[idirection].set_xlabel(f"Residual {direction} (mm)")
+
+            # plot x(y) residuals vs x(y) coordinate
+            residual_rechit_axs[idirection][0].hist2d(rechits, residuals, bins=100)
+            residual_rechit_axs[idirection][0].set_xlabel(f"Rechit {direction} (mm)")
+            residual_rechit_axs[idirection][0].set_ylabel(f"Residual {direction} (mm)")
+            residual_prophit_axs[idirection][0].hist2d(prophits, residuals, bins=100)
+            residual_prophit_axs[idirection][0].set_xlabel(f"Propagated {direction} (mm)")
+            residual_prophit_axs[idirection][0].set_ylabel(f"Residual {direction} (mm)")
+            
+            # plot x(y) residuals vs y(x) coordinate
+            residual_rechit_axs[idirection][1].hist2d(
+                ak.flatten([rechits_x,rechits_y][idirection_other][single_hit_mask]), residuals, bins=100
+            )
+            residual_rechit_axs[idirection][1].set_xlabel(f"Rechit {direction_other} (mm)")
+            residual_rechit_axs[idirection][1].set_ylabel(f"Residual {direction} (mm)")
+            residual_prophit_axs[idirection][1].hist2d(
+                [prophits_x,prophits_y][idirection_other][single_hit_mask], residuals, bins=100
+            )
+            residual_prophit_axs[idirection][1].set_xlabel(f"Propagated {direction_other} (mm)")
+            residual_prophit_axs[idirection][1].set_ylabel(f"Residual {direction} (mm)")
+
+        residual_fig.tight_layout()
+        residual_fig.savefig(os.path.join(args.odir, "residuals.png"))
+
+        residual_rechit_fig.tight_layout()
+        residual_rechit_fig.savefig(os.path.join(args.odir, "residuals_rechits.png"))
+
+        residual_prophit_fig.tight_layout()
+        residual_prophit_fig.savefig(os.path.join(args.odir, "residuals_prophits.png"))
+
+        return 0
 
         print("Starting plotting...")
         directions = ["x", "y"]
