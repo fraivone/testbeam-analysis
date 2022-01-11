@@ -118,24 +118,25 @@ int main (int argc, char** argv) {
     rechitTree->SetBranchAddress("rechit2D_X_clusterSize", &vecRechit2D_X_ClusterSize);
     rechitTree->SetBranchAddress("rechit2D_Y_clusterSize", &vecRechit2D_Y_ClusterSize);
 
-    const int nChambers = 4;
+    const int nTrackingChambers = 4;
     // track variables
-    std::array<double, nChambers> trackFitChi2;
-    std::array<double, nChambers> tracks_X_slope;
-    std::array<double, nChambers> tracks_Y_slope;
-    std::array<double, nChambers> tracks_X_intercept;
-    std::array<double, nChambers> tracks_Y_intercept;
+    std::array<double, nTrackingChambers> trackFitChi2;
+    std::array<double, nTrackingChambers> tracks_X_slope;
+    std::array<double, nTrackingChambers> tracks_Y_slope;
+    std::array<double, nTrackingChambers> tracks_X_intercept;
+    std::array<double, nTrackingChambers> tracks_Y_intercept;
     // rechit 2D variables
-    std::array<double, nChambers> rechits2D_X;
-    std::array<double, nChambers> rechits2D_Y;
-    std::array<double, nChambers> rechits2D_X_Error;
-    std::array<double, nChambers> rechits2D_Y_Error;
-    std::array<double, nChambers> rechits2D_X_ClusterSize;
-    std::array<double, nChambers> rechits2D_Y_ClusterSize;
-    std::array<double, nChambers> prophits2D_X;
-    std::array<double, nChambers> prophits2D_Y;
-    std::array<double, nChambers> prophits2D_X_Error;
-    std::array<double, nChambers> prophits2D_Y_Error;
+    std::array<int, nTrackingChambers> rechits2D_Chamber;
+    std::array<double, nTrackingChambers> rechits2D_X;
+    std::array<double, nTrackingChambers> rechits2D_Y;
+    std::array<double, nTrackingChambers> rechits2D_X_Error;
+    std::array<double, nTrackingChambers> rechits2D_Y_Error;
+    std::array<double, nTrackingChambers> rechits2D_X_ClusterSize;
+    std::array<double, nTrackingChambers> rechits2D_Y_ClusterSize;
+    std::array<double, nTrackingChambers> prophits2D_X;
+    std::array<double, nTrackingChambers> prophits2D_Y;
+    std::array<double, nTrackingChambers> prophits2D_X_Error;
+    std::array<double, nTrackingChambers> prophits2D_Y_Error;
     // rechit and prophit variables
     std::vector<int> rechitsChamber, prophitsChamber;
     std::vector<double> rechitsEta;
@@ -166,6 +167,7 @@ int main (int argc, char** argv) {
     trackTree.Branch("tracks_X_intercept", &tracks_X_intercept);
     trackTree.Branch("tracks_Y_intercept", &tracks_Y_intercept);
     // rechit 2D branches
+    trackTree.Branch("rechits2D_Chamber", &rechits2D_Chamber);
     trackTree.Branch("rechits2D_X", &rechits2D_X);
     trackTree.Branch("rechits2D_Y", &rechits2D_Y);
     trackTree.Branch("rechits2D_X_Error", &rechits2D_X_Error);
@@ -215,7 +217,8 @@ int main (int argc, char** argv) {
     }
 
     int nentries = rechitTree->GetEntries();
-    int nentriesGolden = 0;
+    int nentriesGolden = 0, nentriesNice = 0;
+    std::array<double, nTrackingChambers> eventsPerTrackingChamber;
 
     double efficiencyGe21 = 0.; // TEMP HACK, REMOVE!
 
@@ -229,6 +232,11 @@ int main (int argc, char** argv) {
       if (verbose) std::cout << "Event " << nevt << "/" << nentries << std::endl;
       else bar.update();
 
+      // reset support variables:
+      for (int i=0; i<nTrackingChambers; i++) {
+        rechits2D_Chamber[i] = -1;
+        eventsPerTrackingChamber[i] = 0;
+      }
       rechitsChamber.clear();
       prophitsChamber.clear();
       rechitsEta.clear();
@@ -248,17 +256,25 @@ int main (int argc, char** argv) {
 
       rechitTree->GetEntry(nevt);
 
-      // process only if single rechit 2D per tracking chamber per event:
-      if (nrechits2d!=nChambers) continue;
-      bool isGoldenEvent = true;
-      for (int irechit=0; irechit<nrechits2d; irechit++) {
+      // process event only if at least one 2D rechit per tracking chamber:
+      bool isNiceEvent = true;
+      for (int irechit=0; isNiceEvent && irechit<nrechits2d; irechit++) {
         chamber = vecRechit2DChamber->at(irechit);
-        if (chamber!=irechit) isGoldenEvent = false;
+        if (eventsPerTrackingChamber[chamber]>0) isNiceEvent = false;
+        else eventsPerTrackingChamber[chamber]++;
+        if (verbose) std::cout << "  Rechit in chamber " << chamber << std::endl;
       }
-      if (!isGoldenEvent) continue;
-      nentriesGolden++;
 
-      for (int testedChamber=0; testedChamber<nChambers; testedChamber++) {
+      // skip if it is not a nice event:
+      if (!isNiceEvent) {
+        if (verbose) {
+          std::cout << "  Not nice, skipping event..." << std::endl; 
+        }
+        continue;
+      }
+      nentriesNice++;
+
+      for (int testedChamber=0; testedChamber<nTrackingChambers; testedChamber++) {
         track.clear();
         // loop over rechits and make track:
         for (int irechit=0; irechit<nrechits2d; irechit++) {
@@ -267,11 +283,13 @@ int main (int argc, char** argv) {
             Rechit(chamber, vecRechit2D_X_Center->at(irechit), vecRechit2D_X_Error->at(irechit), vecRechit2D_X_ClusterSize->at(irechit)),
             Rechit(chamber, vecRechit2D_Y_Center->at(irechit), vecRechit2D_Y_Error->at(irechit), vecRechit2D_Y_ClusterSize->at(irechit))
           );
-          detectorTrackers[chamber].mapRechit2D(&rechit2d); // apply global geometry
+          // apply global geometry:
+          detectorTrackers[chamber].mapRechit2D(&rechit2d);
           if (chamber!=testedChamber) {
             track.addRechit(rechit2d);
           } else {
             // add rechit to tree
+            rechits2D_Chamber[testedChamber] = chamber;
             rechits2D_X[testedChamber] = rechit2d.getGlobalX();
             rechits2D_Y[testedChamber] = rechit2d.getGlobalY();
             rechits2D_X_ClusterSize[testedChamber] = rechit2d.getClusterSizeX();
@@ -377,11 +395,11 @@ int main (int argc, char** argv) {
     std::cout << std::endl;
 
     std::cout << "Efficiency GE2/1 ";
-    std::cout << (int) efficiencyGe21 << "/" << nentriesGolden << " = ";
-    efficiencyGe21 /= (double) nentriesGolden;
+    std::cout << (int) efficiencyGe21 << "/" << nentriesNice << " = ";
+    efficiencyGe21 /= (double) nentriesNice;
     std::cout << efficiencyGe21 << std::endl;
 
-    std::cout << "Golden entries " << nentriesGolden << std::endl;
+    std::cout << "Nice entries " << nentriesNice << std::endl;
 
     trackTree.Write();
     trackFile.Close();
