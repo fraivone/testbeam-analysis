@@ -92,15 +92,25 @@ def main():
             rechits_eta_single, bins=10, range=(0.5,10.5),
             histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
         )
+        eta_axs[0].set_xlabel("Rechit eta partition")
         eta_axs[1].hist(
             prophits_eta_single, bins=10, range=(0.5,10.5),
             histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
         )
+        eta_axs[1].set_xlabel("Propagated hit eta partition")
         eta_axs[2].hist(
             prophits_eta_single-rechits_eta_single, bins=10, range=(0.5,10.5),
             histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k"
         )
-        print("Mean", ak.mean(rechits_eta_single-prophits_eta_single))
+        eta_axs[2].set_xlabel("Residual eta partition")
+        mean_eta = ak.mean(rechits_eta_single-prophits_eta_single)
+        print("Mean", mean_eta)
+        eta_axs[2].text(
+            0.6, 0.8,
+            f"mean residual {mean_eta:1.2f}",
+            transform=eta_axs[2].transAxes,
+            bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
+        )
         eta_fig.tight_layout()
         eta_fig.savefig(os.path.join(args.odir, "eta.png"))
 
