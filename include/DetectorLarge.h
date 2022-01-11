@@ -22,18 +22,15 @@ class DetectorLarge : public DetectorGeometry {
         double getBaseNarrow() { return fBaseNarrow; }
         double getBaseWide() { return fBaseWide; }
         double getHeight() { return fHeight; }
-        double getNEta() { return fNumberPartitions; }
-        double getEtaHeight() { return fEtaHeight; }
         double getNStrips() { return fNumberStrips; }
 
         Rechit createRechit(Cluster cluster);
     
     private:
 
-        int fOh, fChamber, fNumberPartitions;
+        int fOh, fChamber;
         double fBaseNarrow, fBaseWide, fHeight;
         int fNumberStrips;
-        double fEtaHeight;
 
         std::vector<double> fPartitionYs;
         std::vector<double> fPartitionYTops;

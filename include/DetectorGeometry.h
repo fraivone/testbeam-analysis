@@ -17,13 +17,18 @@ class DetectorGeometry {
         double getPositionX() { return fPosition[0]; }
         double getPositionY() { return fPosition[1]; }
         double getPositionZ() { return fPosition[2]; }
-
         double getOriginY() { return fOriginY; }
+
+        double getNEta() { return fNumberPartitions; }
+        double getEtaHeight() { return fEtaHeight; }
         
         //virtual ~DetectorGeometry();
 
         double fPosition[3];
         double fOriginY;
+
+        int fNumberPartitions;
+        double fEtaHeight;
 };
 
 #endif

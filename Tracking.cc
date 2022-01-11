@@ -178,7 +178,7 @@ int main (int argc, char** argv) {
     trackTree.Branch("prophits2D_Y_Error", &prophits2D_Y_Error);
     // rechit and prophit branches
     trackTree.Branch("rechitChamber", &rechitsChamber);
-    trackTree.Branch("prophitsChamber", &prophitsChamber);
+    trackTree.Branch("prophitChamber", &prophitsChamber);
     trackTree.Branch("rechitEta", &rechitsEta);
     trackTree.Branch("rechitLocalX", &rechitsLocalX);
     trackTree.Branch("rechitLocalY", &rechitsLocalY);
@@ -326,6 +326,7 @@ int main (int argc, char** argv) {
       // extrapolate track on GE2/1
       hit = track.propagate(&detectorGe21);
       prophitsChamber.push_back(detectorGe21.getChamber());
+      prophitsEta.push_back(hit.getEta());
       prophitsGlobalX.push_back(hit.getGlobalX());
       prophitsGlobalY.push_back(hit.getGlobalY());
       prophitsXError.push_back(hit.getErrX());
@@ -356,6 +357,7 @@ int main (int argc, char** argv) {
         hit = Hit::fromLocal(&detectorGe21,
           vecRechitX->at(iRechit), vecRechitY->at(iRechit), 0., 0., 0.
         );
+        rechitsChamber.push_back(chamber);
         rechitsEta.push_back(hit.getEta());
         rechitsLocalX.push_back(hit.getLocalX());
         rechitsLocalY.push_back(hit.getLocalY());

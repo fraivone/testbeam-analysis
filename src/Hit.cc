@@ -35,7 +35,6 @@ void Hit::setDetector(DetectorGeometry *detector) {
 }
 
 int Hit::getEta() {
-    // calculate eta partition of hit from detector geometry
-    return ((DetectorLarge*)fDetector)->getNEta() - 
-    (int)(getLocalY()/((DetectorLarge*)fDetector)->getEtaHeight());
+    // calculate eta partition of hit from detector geometry    
+    return fDetector->getNEta() - floor(getLocalY()/fDetector->getEtaHeight());
 }
