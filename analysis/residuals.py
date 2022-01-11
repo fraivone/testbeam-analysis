@@ -169,9 +169,9 @@ def main():
 
                 #rotation_axs[idirection][tested_chamber].set_xlim(-30, 30)
                 #rotation_axs[idirection][tested_chamber].set_ylim(-0.06, 0.06)
-                rotation_axs[idirection][tested_chamber].set_xlabel("Propagated hit (mm)")
-                rotation_axs[idirection][tested_chamber].set_ylabel("Residual (mm)")
-                rotation_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
+                rotation_axs[idirection][tested_chamber].set_xlabel(f"Propagated hit {directions[idirection-1]} (mm)")
+                rotation_axs[idirection][tested_chamber].set_ylabel(f"Residual {direction} (mm)")
+                rotation_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
 
                 # plot 2D distribution of residuals vs propagated position:
                 residuals2d_ax[idirection].hist2d(prophits[idirection], residuals[idirection], bins=100, range=[[-40, 40],[-1, 1]])
@@ -202,7 +202,7 @@ def main():
             properr_fig.savefig(os.path.join(args.odir, f"extrapolation_error_{tested_chamber}.png"))
 
             spres_axs[tested_chamber].set_xlabel("Cluster size")            
-            spres_axs[tested_chamber].set_ylabel(f"Space resolution (µm)")
+            spres_axs[tested_chamber].set_ylabel(f"Residual sigma (µm)")
             spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             spres_axs[tested_chamber].legend()
 
