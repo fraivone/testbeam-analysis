@@ -4,12 +4,18 @@ from tqdm import tqdm
 
 import uproot
 import numpy as np
+import awkward as ak
 import scipy
 from scipy.optimize import curve_fit
 
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
+
+from concurrent.futures import ThreadPoolExecutor
+executor = ThreadPoolExecutor(8)
 
 def linear_function(x, *p):
     q, m = p
@@ -30,8 +36,8 @@ def analyse_residuals(residuals, range, nbins, ax, legend, xlabel):
     bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
     
     # gaussian fit
-    coeff = [len(residuals), residuals.mean(), residuals.std()]
-    coeff += [len(residuals)*0.1, residuals.mean(), 10*residuals.std()]
+    coeff = [len(residuals), ak.mean(residuals), ak.std(residuals)]
+    coeff += [len(residuals)*0.1, ak.mean(residuals), 10*ak.std(residuals)]
     try:
         coeff, var_matrix = curve_fit(gauss2, bins, points, p0=coeff, method="lm")
     except RuntimeError:
@@ -67,37 +73,56 @@ def main():
         if args.verbose: track_tree.show()
 
         print("Reading tree...")
-        rechits_x = np.vstack(track_tree["rechits2D_X"].array(library="np", entry_stop=args.events)).T
-        rechits_y = np.vstack(track_tree["rechits2D_Y"].array(library="np", entry_stop=args.events)).T
-        prophits_x = np.vstack(track_tree["prophits2D_X"].array(library="np", entry_stop=args.events)).T
-        prophits_y = np.vstack(track_tree["prophits2D_Y"].array(library="np", entry_stop=args.events)).T
+        rechits_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)
+        rechits_x = track_tree["rechits2D_X"].array(entry_stop=args.events)
+        rechits_y = track_tree["rechits2D_Y"].array(entry_stop=args.events)
+        prophits_x = track_tree["prophits2D_X"].array(entry_stop=args.events)
+        prophits_y = track_tree["prophits2D_Y"].array(entry_stop=args.events)
         residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
-        rechits_x_error = np.vstack(track_tree["rechits2D_X_Error"].array(library="np", entry_stop=args.events)).T
-        rechits_y_error = np.vstack(track_tree["rechits2D_Y_Error"].array(library="np", entry_stop=args.events)).T
-        cluster_size_x = np.vstack(track_tree["rechits2D_X_ClusterSize"].array(library="np", entry_stop=args.events)).T
-        cluster_size_y = np.vstack(track_tree["rechits2D_Y_ClusterSize"].array(library="np", entry_stop=args.events)).T
-        prophits_x_error = np.vstack(track_tree["prophits2D_X_Error"].array(library="np", entry_stop=args.events)).T
-        prophits_y_error = np.vstack(track_tree["prophits2D_Y_Error"].array(library="np", entry_stop=args.events)).T
-
+        #rechits_x_error = track_tree["rechits2D_X_Error"].array(entry_stop=args.events)
+        #rechits_y_error = track_tree["rechits2D_Y_Error"].array(entry_stop=args.events)
+        cluster_size_x = track_tree["rechits2D_X_ClusterSize"].array(entry_stop=args.events)
+        cluster_size_y = track_tree["rechits2D_Y_ClusterSize"].array(entry_stop=args.events)
+        prophits_x_error = track_tree["prophits2D_X_Error"].array(entry_stop=args.events)
+        prophits_y_error = track_tree["prophits2D_Y_Error"].array(entry_stop=args.events)
+        
+        # choose only events with hits in all chambers:
+        mask_4hit = ak.count_nonzero(rechits_chamber>=0, axis=1)>3
+        rechits_chamber = rechits_chamber[mask_4hit]
+        rechits_x, rechits_y = rechits_x[mask_4hit], rechits_y[mask_4hit]
+        prophits_x, prophits_y = prophits_x[mask_4hit], prophits_y[mask_4hit]
+        residuals_x, residuals_y = residuals_x[mask_4hit], residuals_y[mask_4hit]
+        cluster_size_x, cluster_size_y = cluster_size_x[mask_4hit], cluster_size_y[mask_4hit]
+        prophits_x_error, prophits_y_error = prophits_x_error[mask_4hit], prophits_y_error[mask_4hit]
+        
+        # Preparing figures:
         print("Starting plotting...")
         directions = ["x", "y"]
         residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
+        properr_fig, properr_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
+        residuals2d_xx_fig, residuals2d_xx_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
+        residuals2d_xy_fig, residuals2d_xy_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
 
+        ANGLES = [3e-3, -1.9e-3, -0.3e-3, +1.5e-3]
         for tested_chamber in range(4):
             print(f"Processing chamber {tested_chamber}...")
-            rechits = [rechits_x[tested_chamber], rechits_y[tested_chamber]]
-            prophits = [prophits_x[tested_chamber], prophits_y[tested_chamber]]
-            residuals = [residuals_x[tested_chamber], residuals_y[tested_chamber]]
-            cluster_sizes = [cluster_size_x[tested_chamber], cluster_size_y[tested_chamber]]
+            rechits = [rechits_x[:,tested_chamber], rechits_y[:,tested_chamber]]
+            # apply angular correction to rechits:
+            rechits_corrected = [
+                rechits[0]*np.cos(ANGLES[tested_chamber]) + rechits[1]*np.sin(ANGLES[tested_chamber]),
+                -rechits[0]*np.sin(ANGLES[tested_chamber]) + rechits[1]*np.cos(ANGLES[tested_chamber])
+            ]
+            rechits = rechits_corrected
+
+            prophits = [prophits_x[:,tested_chamber], prophits_y[:,tested_chamber]]
+            residuals = [prophits[0]-rechits[0], prophits[1]-rechits[1]]
+            cluster_sizes = [cluster_size_x[:,tested_chamber], cluster_size_y[:,tested_chamber]]
 
             space_resolutions = dict()
-            properr_fig, properr_ax = plt.figure(figsize=(10,7)), plt.axes()
-            residuals2d_fig, residuals2d_ax = plt.subplots(nrows=2, ncols=1, figsize=(10,12))
-            residual_cls_axs[0][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             cluster_size_cuts = list(range(1,10))
             for idirection in range(2):
                 direction = directions[idirection]
@@ -114,13 +139,14 @@ def main():
                 residual_axs[idirection][tested_chamber].set_title(
                     f"BARI-0{tested_chamber+1} {direction} - {space_resolution:1.0f} µm"
                 )
+                residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
                 
                 # plot residuals for cluster sizes separately:
                 for cls in tqdm(cluster_size_cuts):
                     space_resolutions[direction].append(
                         analyse_residuals(
                             residuals[idirection][cluster_size==cls],
-                            (-1.2, 1.2), 100,
+                            (-0.45, 0.45), 200,
                             residual_cls_axs[idirection][tested_chamber],
                             f"cluster size {cls}",
                             f"{directions[idirection]} residual (mm)"
@@ -141,10 +167,10 @@ def main():
                 for i,b in enumerate(prophit_bins[:-1]):
                     b_min, b_max = b, prophit_bins[i+1]
                     selection = (prophits[idirection]>b_min) & (prophits[idirection]<b_max)
-                    prophit_means.append(prophits[idirection][selection].mean())
-                    residual_means.append(residuals[int(not idirection)][selection].mean())
-                    prophit_errors.append(prophits[idirection][selection].std())
-                    residual_errors.append(residuals[int(not idirection)][selection].std()/np.sqrt(residuals[idirection][selection].size))
+                    prophit_means.append(ak.mean(prophits[idirection][selection]))
+                    residual_means.append(ak.mean(residuals[idirection-1][selection]))
+                    prophit_errors.append(ak.std(prophits[idirection][selection]))
+                    residual_errors.append(ak.std(residuals[idirection-1][selection])/np.sqrt(ak.num(residuals[idirection][selection], axis=0)))
                    
                 rotation_axs[idirection][tested_chamber].errorbar(
                     prophit_means, residual_means, xerr=prophit_errors, yerr=residual_errors, fmt="o"
@@ -169,18 +195,23 @@ def main():
 
                 #rotation_axs[idirection][tested_chamber].set_xlim(-30, 30)
                 #rotation_axs[idirection][tested_chamber].set_ylim(-0.06, 0.06)
-                rotation_axs[idirection][tested_chamber].set_xlabel(f"Propagated hit {directions[idirection-1]} (mm)")
-                rotation_axs[idirection][tested_chamber].set_ylabel(f"Residual {direction} (mm)")
+                rotation_axs[idirection][tested_chamber].set_xlabel(f"Propagated hit {direction} (mm)")
+                rotation_axs[idirection][tested_chamber].set_ylabel(f"Residual {directions[idirection-1]} (mm)")
                 rotation_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
 
                 # plot 2D distribution of residuals vs propagated position:
-                residuals2d_ax[idirection].hist2d(prophits[idirection], residuals[idirection], bins=100, range=[[-40, 40],[-1, 1]])
-                residuals2d_ax[idirection].set_title(f"BARI-0{tested_chamber+1} direction {direction}")
-                residuals2d_ax[idirection].set_xlabel("Propagated position (mm)")
-                residuals2d_ax[idirection].set_ylabel("Residual (mm)")
+                residuals2d_xy_axs[idirection][tested_chamber].hist2d(prophits[idirection], residuals[idirection-1], bins=100, range=[[-40, 40],[-0.6, 0.6]])
+                residuals2d_xy_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+                residuals2d_xy_axs[idirection][tested_chamber].set_xlabel(f"Propagated position {direction} (mm)")
+                residuals2d_xy_axs[idirection][tested_chamber].set_ylabel(f"Residual {directions[idirection-1]} (mm)")
+
+                # plot 2D distribution of residuals vs propagated position:
+                residuals2d_xx_axs[idirection][tested_chamber].hist2d(prophits[idirection], residuals[idirection], bins=100, range=[[-40, 40],[-0.6, 0.6]])
+                residuals2d_xx_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+                residuals2d_xx_axs[idirection][tested_chamber].set_xlabel(f"Propagated position {direction} (mm)")
+                residuals2d_xx_axs[idirection][tested_chamber].set_ylabel(f"Residual {direction} (mm)")
 
                 spres_axs[tested_chamber].plot(cluster_size_cuts, space_resolutions[direction], marker="o", label=direction)
-                
 
             # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
             # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
@@ -193,21 +224,17 @@ def main():
             # plt.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GEM-10x10-380XY-BARI-04", horizontalalignment="right")
 
             # plot propagation errors
-            properr_ax.hist(prophits_x_error[tested_chamber], bins=70, label="x", alpha=0.3)
-            properr_ax.hist(prophits_y_error[tested_chamber], bins=70, label="y", alpha=0.3)
-            properr_ax.set_xlim(0, 0.7)
-            properr_ax.set_xlabel("Extrapolation uncertainty (mm)")
-            properr_ax.set_title(f"BARI-0{tested_chamber+1}")
-            properr_ax.legend()
-            properr_fig.savefig(os.path.join(args.odir, f"extrapolation_error_{tested_chamber}.png"))
+            properr_axs[tested_chamber].hist(prophits_x_error[:,tested_chamber], bins=200, label="x", alpha=0.3)
+            properr_axs[tested_chamber].hist(prophits_y_error[:,tested_chamber], bins=200, label="y", alpha=0.3)
+            properr_axs[tested_chamber].set_xlim(0, 1)
+            properr_axs[tested_chamber].set_xlabel("Extrapolation uncertainty (mm)")
+            properr_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+            properr_axs[tested_chamber].legend()
 
             spres_axs[tested_chamber].set_xlabel("Cluster size")            
             spres_axs[tested_chamber].set_ylabel(f"Residual sigma (µm)")
             spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             spres_axs[tested_chamber].legend()
-
-            residuals2d_fig.tight_layout()
-            residuals2d_fig.savefig(os.path.join(args.odir, f"residuals2d_{tested_chamber}.png"))
 
         print("Saving plots...")
         
@@ -220,7 +247,16 @@ def main():
         residual_cls_fig.tight_layout()
         residual_cls_fig.savefig(os.path.join(args.odir, "residuals_cls.png"))
 
+        properr_fig.tight_layout()
+        properr_fig.savefig(os.path.join(args.odir, "extrapolation_error.png"))
+        
         rotation_fig.tight_layout()
         rotation_fig.savefig(os.path.join(args.odir, "rotation.png"))
+
+        residuals2d_xx_fig.tight_layout()
+        residuals2d_xx_fig.savefig(os.path.join(args.odir, "residuals2d_xx.png"))
+
+        residuals2d_xy_fig.tight_layout()
+        residuals2d_xy_fig.savefig(os.path.join(args.odir, "residuals2d_xy.png"))
 
 if __name__=='__main__': main()
