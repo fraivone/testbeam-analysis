@@ -43,7 +43,7 @@ int Cluster::getChamber() {
 
 int Cluster::getDirection() {
     if (fOh>0) {
-        return (fEta+1) % 2;
+        return fEta % 2;
     } else {
         return 0;
     }
@@ -61,8 +61,6 @@ std::vector<Cluster> Cluster::fromDigis(std::vector<Digi> digis) {
         // Map OH, eta to chamber
         oh = digi.getOh();
         eta = digi.getEta();
-        // if (oh == 0) chamber = 4;
-        // else chamber = (oh-2)*2 + eta;
 
         // Use as seed for cluster:
         Cluster cluster = Cluster(oh, eta, digi.getStrip(), digi.getStrip());
