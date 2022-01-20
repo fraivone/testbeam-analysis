@@ -14,6 +14,10 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
+# enable multi-threading:
+from concurrent.futures import ThreadPoolExecutor
+executor = ThreadPoolExecutor()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("ifile", type=pathlib.Path, help="Input file")
@@ -100,6 +104,10 @@ def main():
             )
             plt.xlabel("x (mm)")
             plt.ylabel("y (mm)")
+            plt.title(
+                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                color='black', weight='normal', loc="left"
+            )
             plt.colorbar(label="Efficiency")
             #plt.clim(0.5, 1.)
             plt.tight_layout()
@@ -145,8 +153,9 @@ def main():
                 # to refine matching with angle later:
                 # rechits_x_chamber = ak.sum(rechits_x_chamber.mask[chamber_mask], axis=1)
                 # rechits_y_chamber = ak.sum(rechits_y_chamber.mask[chamber_mask], axis=1)
-                matched_x_chamber = rechits_x_chamber[chamber_mask]
-                matched_y_chamber = rechits_y_chamber[chamber_mask]
+                chamber_mask = chamber_mask[chamber_mask]
+                matched_x_chamber = prophits_x_chamber[chamber_mask]
+                matched_y_chamber = prophits_y_chamber[chamber_mask]
 
                 print("Calculating efficiency map...")
                 eff_range = [[min(prophits_x_chamber), max(prophits_x_chamber)], [min(prophits_y_chamber), max(prophits_y_chamber)]]
@@ -172,8 +181,12 @@ def main():
                 )
                 eff_axs[tested_chamber].set_xlabel("x (mm)")
                 eff_axs[tested_chamber].set_ylabel("y (mm)")
+                eff_axs[tested_chamber].set_title(
+                    r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                    color='black', weight='normal', loc="left"
+                )
                 eff_fig.colorbar(img, ax=eff_axs[tested_chamber], label="Efficiency")
-                img.set_clim(.7, 1.)
+                img.set_clim(.85, 1.)
                 eff_axs[tested_chamber].text(eff_range[0][-1]-.5, eff_range[1][-1]+2, f"BARI-0{tested_chamber+1}", horizontalalignment="right")
 
             print("Saving result...")
