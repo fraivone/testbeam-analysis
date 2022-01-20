@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "Cluster.h"
 #include "Rechit.h"
 #include "Rechit2D.h"
@@ -28,9 +30,11 @@ Rechit2D DetectorTracker::createRechit2D(Cluster cluster1, Cluster cluster2) {
 
 void DetectorTracker::mapRechit2D(Rechit2D *rechit) {
     // map already existing rechit to global detector geometry
+    double globalX = rechit->getLocalX() - fPosition[0];
+    double globalY = rechit->getLocalY() - fPosition[1];
     rechit->setGlobalPosition(
-        rechit->getLocalX() - fPosition[0],
-        rechit->getLocalY() - fPosition[1],
+        globalX*cos(fTheta) - globalY*sin(fTheta),
+        globalX*sin(fTheta) + globalY*cos(fTheta),
         fPosition[2]
     );
 }

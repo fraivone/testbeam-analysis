@@ -49,10 +49,21 @@ int main (int argc, char** argv) {
     
     int max_events = -1;
     bool verbose = false;
+    bool useAngles = false;
+    double trackerAngles[4];
     for (int iarg=0; iarg<argc; iarg++) {
       std::string arg = argv[iarg];
       if (arg=="--verbose") verbose = true;
-      else if (arg=="--events") max_events = atoi(argv[iarg+1]); 
+      else if (arg=="--events") max_events = atoi(argv[iarg+1]);
+      else if (arg=="--angles") {
+        useAngles = true;
+        std::cout << "angles: ";
+        for (int iangle=0; iangle<4; iangle++) {
+          trackerAngles[iangle] = atof(argv[iarg+iangle+1]);
+          std::cout << trackerAngles[iangle] << " ";
+        }
+        std::cout << std::endl;
+      }
     }
 
     if (max_events > 0) std::cout << "Analyzing " << max_events << " events" << std::endl;
@@ -76,10 +87,10 @@ int main (int argc, char** argv) {
     DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
     // TODO: add ME0
 
-    detectorTrackers[0].setPosition(-0.269035, -2.06244, -(697+254+294));
-    detectorTrackers[1].setPosition(+0.292939, -0.207079, -(254+294));
-    detectorTrackers[2].setPosition(-0.332708, +0.577936, 170.);
-    detectorTrackers[3].setPosition(+0.0905448, +0.108215, 170.+697.);
+    detectorTrackers[0].setPosition(+2.06244, +0.269035, -(697+254+294), trackerAngles[0]);
+    detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
+    detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
+    detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
     //detectorGe21.setPosition(0., -215., 0.);
     detectorGe21.setPosition(0., 0., 0.);
 

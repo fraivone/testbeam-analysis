@@ -20,7 +20,6 @@ class Hit {
         double getErrX() {return fErrPosition[0];}
         double getErrY() {return fErrPosition[1];}
         double getErrZ() {return fErrPosition[2];}
-
         double getLocalX() {return fLocalPosition[0];}
         double getLocalY() {return fLocalPosition[1];}
         double getLocalR() {return fLocalR;}

@@ -12,7 +12,10 @@ class DetectorGeometry {
             fPosition[1] = y;
             fPosition[2] = z;
         }
-        void setPosition(double x, double y, double z, double theta);
+        void setPosition(double x, double y, double z, double theta) {
+            setPosition(x, y, z);
+            fTheta = theta;
+        }
 
         double getPositionX() { return fPosition[0]; }
         double getPositionY() { return fPosition[1]; }
@@ -25,6 +28,7 @@ class DetectorGeometry {
         //virtual ~DetectorGeometry();
 
         double fPosition[3];
+        double fTheta;
         double fOriginY;
 
         int fNumberPartitions;
