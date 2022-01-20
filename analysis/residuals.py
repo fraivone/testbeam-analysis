@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 import uproot
 import numpy as np
+import pandas as pd
 import awkward as ak
 import scipy
 from scipy.optimize import curve_fit
@@ -107,16 +108,16 @@ def main():
         residuals2d_xx_fig, residuals2d_xx_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residuals2d_xy_fig, residuals2d_xy_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
 
-        ANGLES = [3e-3, -1.9e-3, -0.3e-3, +1.5e-3]
+        angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
         for tested_chamber in range(4):
             print(f"Processing chamber {tested_chamber}...")
             rechits = [rechits_x[:,tested_chamber], rechits_y[:,tested_chamber]]
             # apply angular correction to rechits:
-            rechits_corrected = [
-                rechits[0]*np.cos(ANGLES[tested_chamber]) + rechits[1]*np.sin(ANGLES[tested_chamber]),
-                -rechits[0]*np.sin(ANGLES[tested_chamber]) + rechits[1]*np.cos(ANGLES[tested_chamber])
-            ]
-            rechits = rechits_corrected
+            # rechits_corrected = [
+            #     rechits[0]*np.cos(ANGLES[tested_chamber]) + rechits[1]*np.sin(ANGLES[tested_chamber]),
+            #     -rechits[0]*np.sin(ANGLES[tested_chamber]) + rechits[1]*np.cos(ANGLES[tested_chamber])
+            # ]
+            # rechits = rechits_corrected
 
             prophits = [prophits_x[:,tested_chamber], prophits_y[:,tested_chamber]]
             residuals = [prophits[0]-rechits[0], prophits[1]-rechits[1]]
@@ -124,6 +125,7 @@ def main():
 
             space_resolutions = dict()
             cluster_size_cuts = list(range(1,10))
+
             for idirection in range(2):
                 direction = directions[idirection]
                 space_resolutions[direction] = list()
@@ -172,6 +174,7 @@ def main():
                     prophit_errors.append(ak.std(prophits[idirection][selection]))
                     residual_errors.append(ak.std(residuals[idirection-1][selection])/np.sqrt(ak.num(residuals[idirection][selection], axis=0)))
                    
+                """ determine rotation corrections: """
                 rotation_axs[idirection][tested_chamber].errorbar(
                     prophit_means, residual_means, xerr=prophit_errors, yerr=residual_errors, fmt="o"
                 )
@@ -182,13 +185,21 @@ def main():
                 ]
                 coeff, var_matrix = curve_fit(linear_function, prophit_means, residual_means, p0=coeff, method="lm")
                 q, m = coeff
-                #theta = np.arccos(1-abs(m))*1e3
-                theta = np.arcsin(m)*1e3
+                err_q, err_m = np.sqrt(np.diag(var_matrix))
+
+                # calculate angles:
+                theta = np.arcsin(m)
+                err_theta = err_m/np.sqrt(1-m**2)
+                angles[tested_chamber][idirection] = (-1)**idirection*theta
+                err_angles[tested_chamber][idirection] = err_theta
+
                 x_fit = np.linspace(-30, 30, 100)
                 rotation_axs[idirection][tested_chamber].plot(x_fit, linear_function(x_fit, *coeff), color="red")
                 rotation_axs[idirection][tested_chamber].text(
-                    0.75, 0.8,
-                    f"m = {m:1.1e}\nq = {q*1e3:1.2f} µm\nϑ = {theta:1.1f} mrad",
+                    0.7, 0.8,
+                    f"m = {m:1.1e} $\pm$ {err_m:1.1f}\n"+
+                    f"q = {q*1e3:1.2f} $\pm$ {err_q*1e3:1.1f} µm\n"+
+                    f"ϑ = {theta*1e3:1.1f} $\pm$ {err_theta*1e3:1.1f} mrad",
                     transform=rotation_axs[idirection][tested_chamber].transAxes,
                     bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
                 )
@@ -258,5 +269,14 @@ def main():
 
         residuals2d_xy_fig.tight_layout()
         residuals2d_xy_fig.savefig(os.path.join(args.odir, "residuals2d_xy.png"))
+
+        # combine x and y angle corrections, then save:
+        correction_angles = {
+            "angle": np.sum(angles/err_angles**2, axis=1)/np.sum(1/err_angles**2, axis=1),
+            "error": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
+        }
+        pd.DataFrame.from_dict(correction_angles).T.to_csv(
+            os.path.join(args.odir, "angles.csv"), sep=" "
+        )
 
 if __name__=='__main__': main()

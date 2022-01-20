@@ -71,6 +71,7 @@ configure_file(analysis/efficiency.py scripts/efficiency.py COPYONLY)
 configure_file(analysis/residuals.py scripts/residuals.py COPYONLY)
 configure_file(analysis/ge21.py scripts/ge21.py COPYONLY)
 configure_file(analysis/horns.py scripts/horns.py COPYONLY)
+configure_file(analysis/scan.py scripts/scan.py COPYONLY)
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
