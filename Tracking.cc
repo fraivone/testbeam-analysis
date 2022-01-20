@@ -38,14 +38,11 @@ void interruptHandler(int dummy) {
 int main (int argc, char** argv) {
 
     if (argc<3) {
-      std::cout << "Usage: Tracks ifile outdir [--verbose] [--events n]" << std::endl;
+      std::cout << "Usage: Tracks ifile ofile [--verbose] [--events n]" << std::endl;
       return 0;
     }
     std::string ifile   = argv[1];
-    std::string outdir   = argv[2];
-    if (mkdir(outdir.c_str(), 0755)==0) std::cout << "Created directory " << outdir << std::endl;
-    else std::cout << "Failed creating directory " << outdir << ", maybe it already exists" << std::endl;
-    std::string ofile = std::string(outdir+"/tracks.root");
+    std::string ofile   = argv[2];
     
     int max_events = -1;
     bool verbose = false;
@@ -69,9 +66,7 @@ int main (int argc, char** argv) {
     if (max_events > 0) std::cout << "Analyzing " << max_events << " events" << std::endl;
     else std::cout << "Analyzing all events" << std::endl; 
 
-    TFile rechitFile(ifile.c_str(), "READ");
-    //TFile rechitFile(ofile.c_str(), "RECREATE", "Rechit tree file");
-     
+    TFile rechitFile(ifile.c_str(), "READ");     
     TTree *rechitTree = (TTree *) rechitFile.Get("rechitTree");
 
     TFile trackFile(ofile.c_str(), "RECREATE", "Track file");
@@ -212,26 +207,9 @@ int main (int argc, char** argv) {
     Rechit2D rechit2d;
     Hit hit;
 
-    gStyle->SetOptStat(0);
-    TH2D profileHistograms[4];
-    TCanvas *profileCanvases[4];
-    for (int ichamber=0; ichamber<4; ichamber++) {
-      profileCanvases[ichamber] = new TCanvas(
-        std::string("h_profile_chamber"+std::to_string(ichamber)).c_str(),
-        "", 800, 800
-      );
-      profileHistograms[ichamber] = TH2D(
-        std::string("h_profile_chamber"+std::to_string(ichamber)).c_str(),
-        ";x (cm);y (cm);",
-        358, -44.75, 44.75, 358, -44.75, 44.75
-      );
-    }
-
     int nentries = rechitTree->GetEntries();
     int nentriesGolden = 0, nentriesNice = 0;
     std::array<double, nTrackingChambers> eventsPerTrackingChamber;
-
-    double efficiencyGe21 = 0.; // TEMP HACK, REMOVE!
 
     std::cout << nentries << " total events" <<  std::endl;
     if (max_events>0) nentries = max_events;
@@ -334,9 +312,6 @@ int main (int argc, char** argv) {
           std::cout << ", " << prophits2D_Y[testedChamber] << ")";
           std::cout << std::endl;
         }
-
-        // fill beam profile:
-        // profileHistograms[testedChamber].Fill(rechits2D_X[testedChamber], rechits2D_Y[testedChamber]);
       }
 
       // build track with all 4 trackers
@@ -376,9 +351,6 @@ int main (int argc, char** argv) {
         std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
         std::cout << std::endl;
       }
-      
-      // HACK TO CALCULATE EFFICIENCY, REMOVE!
-      if (vecRechitChamber->size()>0) efficiencyGe21+=1.;
 
       // save all 1D rechits local coordinates
       for (int iRechit=0; iRechit<vecRechitChamber->size(); iRechit++) {
@@ -404,27 +376,9 @@ int main (int argc, char** argv) {
       trackTree.Fill();
     }
     std::cout << std::endl;
-
-    std::cout << "Efficiency GE2/1 ";
-    std::cout << (int) efficiencyGe21 << "/" << nentriesNice << " = ";
-    efficiencyGe21 /= (double) nentriesNice;
-    std::cout << efficiencyGe21 << std::endl;
-
     std::cout << "Nice entries " << nentriesNice << std::endl;
 
     trackTree.Write();
     trackFile.Close();
-
-    // for (int ichamber=0; ichamber<4; ichamber++) {
-    //   profileCanvases[ichamber]->cd();
-    //   profileHistograms[ichamber].Draw("colz");
-    //   profileCanvases[ichamber]->SaveAs(
-    //     std::string(outdir+"/profile"+std::to_string(ichamber)+".png").c_str()
-    //   );
-    //   profileHistograms[ichamber].SaveAs(
-    //     std::string(outdir+"/profile"+std::to_string(ichamber)+".root").c_str()
-    //   );
-    // }
-
-    std::cout << "Output files written to " << outdir << std::endl;
+    std::cout << "Output files written to " << ofile << std::endl;
 }
