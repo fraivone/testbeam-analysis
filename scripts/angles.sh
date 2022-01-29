@@ -5,31 +5,40 @@ odir=$2
 events=$3
 steps=$4
 
-angles=(0 0 0 0)
-for i in {1..$steps}; do
-    echo "############################################################"
-    echo "Iteration $i"
+rechit_file=$EOS_TESTBEAM/standalone/rechits/$run.root
 
-    rechit_file=$EOS_TESTBEAM/standalone/rechits/$run.root
-    track_dir=$EOS_TESTBEAM/standalone/angle_corrections/$run/iteration_$i
+angles=(0 0 0 0)
+iteration=1
+while [ "$iteration" -le "$steps" ]; do
+    echo "############################################################"
+    track_dir=$EOS_TESTBEAM/standalone/angle_corrections/$run/iteration_$iteration
+    mkdir -p $odir/iteration_$iteration
     mkdir -p $track_dir
-    mkdir -p $odir/iteration_$i
 
     for jchamber in {0..3}; do
-        echo "Iteration $i, chamber $jchamber"
-        ./Tracking $rechit_file $track_dir --events $events --angles ${angles[@]}
+        echo "Iteration $iteration, chamber $jchamber"
+        track_file=$track_dir/chamber_$jchamber.root
+        ./Tracking $rechit_file $track_file --events $events --angles ${angles[@]}
 
-        python3 scripts/residuals.py $track_dir/tracks.root $odir/iteration_$i --events 100000
-        corrections=($(grep angle $odir/iteration_$i/angles.csv | sed "s/angle //g"))
+        python3 analysis/residuals.py $track_file $odir/iteration_$iteration
+        corrections=($(grep angle $odir/iteration_$iteration/angles.txt | sed "s/angle //g"))
     
         echo "Applying correction to chamber $jchamber..."
         echo "Old angles: ${angles[@]}"
         echo "Corrections: ${corrections[@]}"
         angles[jchamber]=$( echo "$(printf "%.14f" ${angles[jchamber]}) + $(printf "%.14f" ${corrections[jchamber]})" | bc )
         echo "New angles: ${angles[@]}"
+        echo "------------------------------------------------------------"
     done
 
     echo "############################################################"
     echo ""
     echo ""
+
+    iteration=$(( $iteration+1 ))
 done
+
+echo "Done iterations"
+python3 scripts/angles.py $odir/iteration_* $odir
+echo "Final angles: ${angles[@]}"
+echo ${angles[@]} > $odir/angles.txt

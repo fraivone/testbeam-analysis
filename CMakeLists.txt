@@ -62,7 +62,7 @@ add_executable(FastEfficiency FastEfficiency.cc ${sources} ${headers})
 target_link_libraries(FastEfficiency ${ROOT_LIBRARIES})
 
 #----------------------------------------------------------------------------
-# Copy mapping files
+# Copy script and analysis files
 #
 configure_file(mapping/tracker_mapping.csv mapping/tracker_mapping.csv COPYONLY)
 configure_file(mapping/ge21_mapping.csv mapping/ge21_mapping.csv COPYONLY)
@@ -72,6 +72,9 @@ configure_file(analysis/residuals.py analysis/residuals.py COPYONLY)
 configure_file(analysis/ge21.py analysis/ge21.py COPYONLY)
 configure_file(analysis/horns.py analysis/horns.py COPYONLY)
 configure_file(analysis/scan.py analysis/scan.py COPYONLY)
+
+configure_file(scripts/angles.sh scripts/angles.sh COPYONLY)
+configure_file(scripts/angles.py scripts/angles.py COPYONLY)
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
