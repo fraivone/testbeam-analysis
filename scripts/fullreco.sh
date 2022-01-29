@@ -9,4 +9,4 @@ echo "##### rechits #####"
 echo "##### tracks #####"
 ./Tracking $EOS_TESTBEAM/standalone/rechits/$run.root $EOS_TESTBEAM/standalone/tracks/$run.root --angles .00102455514842 -.00105457956694 -.00002029043069 .00080694014877
 echo "##### analysis: residuals #####"
-python3 analysis/residuals.py $EOS_TESTBEAM/standalone/tracks/$run.root $EOS_WWW/gem/testbeam/analsysi/residuals/$run
+python3 analysis/residuals.py $EOS_TESTBEAM/standalone/tracks/$run.root $EOS_WWW/gem/testbeam/analysis/residuals/$run
