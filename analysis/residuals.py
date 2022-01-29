@@ -276,7 +276,7 @@ def main():
             "error": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
         }
         pd.DataFrame.from_dict(correction_angles).T.to_csv(
-            os.path.join(args.odir, "angles.csv"), sep=" "
+            os.path.join(args.odir, "angles.txt"), sep=" "
         )
 
 if __name__=='__main__': main()

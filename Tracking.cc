@@ -46,14 +46,12 @@ int main (int argc, char** argv) {
     
     int max_events = -1;
     bool verbose = false;
-    bool useAngles = false;
-    double trackerAngles[4];
+    double trackerAngles[4] = {0.};
     for (int iarg=0; iarg<argc; iarg++) {
       std::string arg = argv[iarg];
       if (arg=="--verbose") verbose = true;
       else if (arg=="--events") max_events = atoi(argv[iarg+1]);
       else if (arg=="--angles") {
-        useAngles = true;
         std::cout << "angles: ";
         for (int iangle=0; iangle<4; iangle++) {
           trackerAngles[iangle] = atof(argv[iarg+iangle+1]);
