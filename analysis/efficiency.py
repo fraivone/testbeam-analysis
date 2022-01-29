@@ -11,6 +11,7 @@ from scipy.optimize import curve_fit
 import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
@@ -75,46 +76,81 @@ def main():
             # matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
             print("Calculating efficiency map...")
-            eff_fig = plt.figure(figsize=(10,9))
+            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
             matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
             total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
 
             print(matched_histogram)
             print(total_histogram)
-            print(matched_bins_x)
-            print(matched_bins_y)
+            print(ak.count(matched_bins_x), matched_bins_x)
+            print(ak.count(matched_bins_y), matched_bins_y)
 
             if not (np.array_equal(matched_bins_x,total_bins_x) and np.array_equal(matched_bins_y,total_bins_y)):
                 raise ValueError("Different bins between numerator and denominator")
             efficiency = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
 
-            print(efficiency)
+            print(ak.count(efficiency), efficiency)
             
             print("Plotting efficiency map...")
-            bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
-            bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
-            #plt.contourf(bins_x, bins_y, efficiency)
-            plt.imshow(
+            # centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
+            # matched_bins_x = matched_bins_x[matched_bins_x < -10]
+            # efficiency = efficiency[centers_x < -10]
+            # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
+            # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
+            img = eff_ax.imshow(
                 efficiency,
-                #extent = [0, 1, 0, 1],
-                #extent=eff_range[0]+eff_range[1],
-                extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1], ],
+                extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
                 origin="lower"
             )
-            plt.xlabel("x (mm)")
-            plt.ylabel("y (mm)")
-            plt.title(
+            eff_ax.set_xlabel("x (mm)")
+            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_title(
                 r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
                 color='black', weight='normal', loc="left"
             )
-            plt.colorbar(label="Efficiency")
-            #plt.clim(0.5, 1.)
-            plt.tight_layout()
-            plt.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GE2/1", horizontalalignment="right")
-
+            eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
+            #img.set_clim(.85, 1.)
+            eff_fig.tight_layout()
+            eff_ax.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GE2/1", horizontalalignment="right")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21.png"))
+
+            """ Calculate angular alignment based on HV sectors """
+            # choose only points close to 1 sector:
+            centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
+            centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])
+            map_mask = centers_x < -10
+            centers_x = centers_x[map_mask]
+            efficiency = efficiency[map_mask]
+
+            print(centers_x.shape)
+            print(efficiency.shape)
+
+            npoints_y = 10
+            step_y = int(ak.count(centers_y)/npoints_y)
+            slices_y = centers_y[::step_y]
+            print(slices_y.shape)
+            print("efficiency", efficiency)
+            print("transposed", efficiency.T)
+            print("efficiency shape", efficiency.shape)
+            efficiency_slices = efficiency.T[::step_y]
+            print(efficiency_slices.shape)
+            print(efficiency_slices)
+
+            #slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(12, 10*npoints_y))
+            slices_fig, slices_ax = plt.figure(), plt.subplot(projection="3d")
+            for slice_y, eff_slice in zip(slices_y, efficiency_slices):
+                #print(centers_x.shape)
+                #print(eff_slice.shape)
+                slices_ax.plot(centers_x, slice_y*np.ones(ak.count(centers_x)), eff_slice)
+                eff_min = ak.min(eff_slice)
+                x_min = centers_x[eff_slice==eff_min] # where efficiency minimum is
+                #print(slice_y, x_min)
+            slices_ax.set_xlabel("x (mm)")
+            slices_ax.set_ylabel("y (mm)")
+            slices_ax.set_zlabel("Efficiency")
+            slices_fig.savefig(os.path.join(args.odir, "ge21_slices.png"))
 
         elif args.detector=="tracker":
             rechits_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)
@@ -169,8 +205,8 @@ def main():
                 print(efficiency)
                 
                 print("Plotting efficiency map...")
-                bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
-                bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
+                # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
+                # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
                 #plt.contourf(bins_x, bins_y, efficiency)
                 img = eff_axs[tested_chamber].imshow(
                     efficiency,
