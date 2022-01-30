@@ -28,8 +28,10 @@ Hit Hit::fromLocal(DetectorGeometry *detector, double localX, double localY, dou
 void Hit::setDetector(DetectorGeometry *detector) {
     fDetector = detector;
     // calculate local coordinates:
-    fLocalPosition[0] = fGlobalPosition[0] - detector->getPositionX();
-    fLocalPosition[1] = fGlobalPosition[1] - detector->getPositionY();
+    double x = fGlobalPosition[0] - detector->getPositionX();
+    double y = fGlobalPosition[1] - detector->getPositionY();
+    fLocalPosition[0] = x*cos(detector->getTheta()) + y*sin(detector->getTheta());
+    fLocalPosition[1] = -x*sin(detector->getTheta()) + y*cos(detector->getTheta());
     fLocalR = sqrt( pow(fLocalPosition[0],2) + pow(fLocalPosition[1]-detector->getOriginY(),2) );
     fLocalPhi = atan( fLocalPosition[0]/(fLocalPosition[1]-detector->getOriginY()) );
 }

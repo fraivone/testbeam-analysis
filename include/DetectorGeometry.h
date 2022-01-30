@@ -20,6 +20,7 @@ class DetectorGeometry {
         double getPositionX() { return fPosition[0]; }
         double getPositionY() { return fPosition[1]; }
         double getPositionZ() { return fPosition[2]; }
+        double getTheta() { return fTheta; }
         double getOriginY() { return fOriginY; }
 
         double getNEta() { return fNumberPartitions; }
