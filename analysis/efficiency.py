@@ -42,10 +42,10 @@ def main():
             prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
             rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
             prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
-            rechits_x = track_tree["rechitLocalY"].array(entry_stop=args.events)
-            rechits_y = track_tree["rechitLocalX"].array(entry_stop=args.events)
-            prophits_x = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
-            prophits_y = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
+            rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
+            rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
+            prophits_x = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
+            prophits_y = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
             residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
             print("Matching...")
@@ -90,6 +90,11 @@ def main():
                 raise ValueError("Different bins between numerator and denominator")
             efficiency = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
 
+            centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
+            centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])
+            # matched_bins_x = matched_bins_x[matched_bins_x < -10]
+            # efficiency = efficiency.T[centers_x < -10].T
+
             print(ak.count(efficiency), efficiency)
             
             print("Plotting efficiency map...")
@@ -120,37 +125,50 @@ def main():
             # choose only points close to 1 sector:
             centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
             centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])
-            map_mask = centers_x < -10
-            centers_x = centers_x[map_mask]
+            map_mask = centers_y < -10
+            centers_y = centers_y[map_mask]
             efficiency = efficiency[map_mask]
 
-            print(centers_x.shape)
-            print(efficiency.shape)
+            # slice efficiency map along 10 y points:
+            npoints_x = 10
+            step_x = int(ak.count(centers_x)/npoints_x)
+            slices_x = centers_x.T[::step_x].T
+            efficiency_slices = efficiency.T[::step_x]
 
-            npoints_y = 10
-            step_y = int(ak.count(centers_y)/npoints_y)
-            slices_y = centers_y[::step_y]
-            print(slices_y.shape)
-            print("efficiency", efficiency)
-            print("transposed", efficiency.T)
-            print("efficiency shape", efficiency.shape)
-            efficiency_slices = efficiency.T[::step_y]
-            print(efficiency_slices.shape)
-            print(efficiency_slices)
-
-            #slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(12, 10*npoints_y))
+            # calculate min position for each slice:
             slices_fig, slices_ax = plt.figure(), plt.subplot(projection="3d")
-            for slice_y, eff_slice in zip(slices_y, efficiency_slices):
-                #print(centers_x.shape)
-                #print(eff_slice.shape)
-                slices_ax.plot(centers_x, slice_y*np.ones(ak.count(centers_x)), eff_slice)
+            min_positions = list()
+            for slice_x, eff_slice in zip(slices_x, efficiency_slices):
+                slices_ax.plot(centers_y, slice_x*np.ones(ak.count(centers_y)), eff_slice)
                 eff_min = ak.min(eff_slice)
-                x_min = centers_x[eff_slice==eff_min] # where efficiency minimum is
-                #print(slice_y, x_min)
+                y_min = centers_y[eff_slice==eff_min] # where efficiency minimum is
+                min_positions.append(y_min[0])
             slices_ax.set_xlabel("x (mm)")
             slices_ax.set_ylabel("y (mm)")
             slices_ax.set_zlabel("Efficiency")
             slices_fig.savefig(os.path.join(args.odir, "ge21_slices.png"))
+
+            # fit linearly:
+            def linear_func(x, m, q): return m*x+q
+            (m, q), cov =  curve_fit(linear_func, np.array(slices_x), min_positions)
+            err_m, err_q = np.sqrt(np.diag(cov))
+            theta = np.arcsin(m)
+            err_theta = err_m/np.sqrt(1-m**2)
+            print("Theta:", theta, "+-", err_theta, "rad")
+
+            # plot correlation:
+            rotation_fig, rotation_ax = plt.figure(), plt.axes()
+            rotation_ax.plot(slices_x, min_positions, "o") # plot data
+            rotation_ax.plot(slices_x, linear_func(slices_x, m, q), color="red") # plot fit
+            rotation_ax.text(
+                0.42, 0.87,
+                f"$\\theta$ = {theta*1e3:1.1f} $\pm$ {err_theta*1e3:1.1f} mrad",
+                transform=rotation_ax.transAxes,
+                bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
+            )
+            rotation_ax.set_xlabel("Position x (mm)")
+            rotation_ax.set_ylabel("Displacement (mm)")
+            rotation_fig.savefig(os.path.join(args.odir, "ge21_rotation.png"))
 
         elif args.detector=="tracker":
             rechits_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)
