@@ -6,11 +6,12 @@
 class Digi{
     
     public:
-        int fOh, fEta, fStrip;
+        int fSlot, fOh, fEta, fStrip;
 
         Digi() {}
-        Digi(int oh, int eta, int strip);
+        Digi(int slot, int oh, int eta, int strip);
 
+        int getSlot();
         int getOh();
         int getEta();
         int getStrip();

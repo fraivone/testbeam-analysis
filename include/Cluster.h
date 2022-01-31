@@ -9,17 +9,18 @@ class Cluster {
 
     public:
 
-        int fOh, fEta;
+        int fSlot, fOh, fEta;
         int fFirst, fLast;
 
         Cluster() {}
-        Cluster(int oh, int eta, int first, int last);
+        Cluster(int slot, int oh, int eta, int first, int last);
 
         bool isNeighbour(int strip);
         void extend(int strip);
         double getCenter();
         double getSize();
 
+        int getSlot();
         int getOh();
         int getEta();
         int getFirst();

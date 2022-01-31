@@ -151,6 +151,7 @@ class GEMUnpacker {
                 vecCh.push_back(i);
                 vecVfat.push_back(vfatId);
                 vecOh.push_back(oh);
+                vecSlot.push_back(slot);
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
@@ -161,6 +162,7 @@ class GEMUnpacker {
                 vecCh.push_back(i+64);
                 vecVfat.push_back(vfatId);
                 vecOh.push_back(oh);
+                vecSlot.push_back(slot);
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
