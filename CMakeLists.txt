@@ -66,12 +66,14 @@ target_link_libraries(FastEfficiency ${ROOT_LIBRARIES})
 #
 configure_file(mapping/tracker_mapping.csv mapping/tracker_mapping.csv COPYONLY)
 configure_file(mapping/ge21_mapping.csv mapping/ge21_mapping.csv COPYONLY)
+
 configure_file(analysis/alignment.py analysis/alignment.py COPYONLY)
 configure_file(analysis/efficiency.py analysis/efficiency.py COPYONLY)
 configure_file(analysis/residuals.py analysis/residuals.py COPYONLY)
 configure_file(analysis/ge21.py analysis/ge21.py COPYONLY)
 configure_file(analysis/horns.py analysis/horns.py COPYONLY)
 configure_file(analysis/scan.py analysis/scan.py COPYONLY)
+configure_file(analysis/track_angles.py analysis/track_angles.py COPYONLY)
 
 configure_file(scripts/angles.sh scripts/angles.sh COPYONLY)
 configure_file(scripts/angles.py scripts/angles.py COPYONLY)
