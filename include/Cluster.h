@@ -9,34 +9,31 @@ class Cluster {
 
     public:
 
-        int fSlot, fOh, fEta;
+        int fChamber, fEta;
         int fFirst, fLast;
 
         Cluster() {}
-        Cluster(int slot, int oh, int eta, int first, int last);
+        Cluster(int chamber, int eta, int first, int last);
 
         bool isNeighbour(int strip);
         void extend(int strip);
         double getCenter();
         double getSize();
 
-        int getSlot();
-        int getOh();
+        int getChamber();
         int getEta();
         int getFirst();
         int getLast();
-
-        int getChamber();
         int getDirection();
 
         static std::vector<Cluster> fromDigis(std::vector<Digi> digis);
     
         std::ostream& operator<<(std::ostream &os) {
-            return os << fOh << "oh." << fEta << "eta." << fFirst << "first." << fLast << "last";
+            return os << fChamber << "chamber." << fEta << "eta." << fFirst << "first." << fLast << "last";
         }
         
         void print() {
-            std::cout << fOh << "oh." << fEta << "eta." << fFirst << "first." << fLast << "last" << std::endl;
+            std::cout << fChamber << "chamber." << fEta << "eta." << fFirst << "first." << fLast << "last" << std::endl;
         }
 };
 

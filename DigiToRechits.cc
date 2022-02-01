@@ -61,17 +61,14 @@ int main (int argc, char** argv) {
 
   // digi variables
   int nhits;
-  std::vector<int> *vecDigiSlot = new std::vector<int>();
-  std::vector<int> *vecDigiOH = new std::vector<int>();
-  std::vector<int> *vecDigiEta = new std::vector<int>(); // even for x, odd for y
   std::vector<int> *vecDigiChamber = new std::vector<int>(); // 0 to 3 for trackers, 4 and 5 for GE21 and ME0
+  std::vector<int> *vecDigiEta = new std::vector<int>(); // even for x, odd for y
   std::vector<int> *vecDigiDirection = new std::vector<int>(); // 0 for x, 1 for y
   std::vector<int> *vecDigiStrip = new std::vector<int>(); // 0 to 357
 
   // cluster variables
   int nclusters;
-  std::vector<int> vecClusterSlot;
-  std::vector<int> vecClusterOH;
+  std::vector<int> vecClusterChamber;
   std::vector<int> vecClusterEta;
   std::vector<int> vecClusterCenter;
   std::vector<int> vecClusterFirst;
@@ -108,8 +105,7 @@ int main (int argc, char** argv) {
 
   // digi variable branches
   digiTree->SetBranchAddress("nhits", &nhits);
-  digiTree->SetBranchAddress("slot", &vecDigiSlot);
-  digiTree->SetBranchAddress("OH", &vecDigiOH);
+  digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
   digiTree->SetBranchAddress("digiEta", &vecDigiEta);
   digiTree->SetBranchAddress("digiStrip", &vecDigiStrip);
   //digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
@@ -117,8 +113,7 @@ int main (int argc, char** argv) {
 
   // cluster branches
   rechitTree.Branch("nclusters", &nclusters, "nclusters/I");
-  rechitTree.Branch("clusterSlot", &vecClusterSlot);
-  rechitTree.Branch("clusterOH", &vecClusterOH);
+  rechitTree.Branch("clusterChamber", &vecClusterChamber);
   rechitTree.Branch("clusterEta", &vecClusterEta);
   rechitTree.Branch("clusterCenter", &vecClusterCenter);
   rechitTree.Branch("clusterFirst", &vecClusterFirst);
@@ -161,8 +156,7 @@ int main (int argc, char** argv) {
 
     digiTree->GetEntry(nevt);
 
-    vecClusterSlot.clear();
-    vecClusterOH.clear();
+    vecClusterChamber.clear();
     vecClusterEta.clear();
     vecClusterCenter.clear();
     vecClusterFirst.clear();
@@ -188,8 +182,7 @@ int main (int argc, char** argv) {
     digisInEvent.clear();
     for (int ihit=0; ihit<nhits; ihit++)
       digisInEvent.push_back(Digi(
-        vecDigiSlot->at(ihit),
-        vecDigiOH->at(ihit),
+        vecDigiChamber->at(ihit),
         vecDigiEta->at(ihit),
         vecDigiStrip->at(ihit)
       ));
@@ -197,14 +190,13 @@ int main (int argc, char** argv) {
 
     nclusters = clustersInEvent.size();
     for (int icluster=0; icluster<nclusters; icluster++) {
-      vecClusterSlot.push_back(clustersInEvent[icluster].getSlot());
-      vecClusterOH.push_back(clustersInEvent[icluster].getOh());
+      vecClusterChamber.push_back(clustersInEvent[icluster].getChamber());
       vecClusterEta.push_back(clustersInEvent[icluster].getEta());
       vecClusterCenter.push_back(clustersInEvent[icluster].getCenter());
       vecClusterFirst.push_back(clustersInEvent[icluster].getFirst());
       vecClusterSize.push_back(clustersInEvent[icluster].getSize());
 
-      if (clustersInEvent[icluster].getOh()==0) {
+      if (clustersInEvent[icluster].getChamber()>3) {
         // for large chamber, build 1D rechits:
         int chamber = clustersInEvent[icluster].getChamber();
         //rechit = Rechit(chamber, 0, clustersInEvent[icluster]);
@@ -231,7 +223,7 @@ int main (int argc, char** argv) {
 
         for (int jcluster=0; jcluster<nclusters; jcluster++) {
           // match with all clusters in perpendicular direction
-          if (clustersInEvent[icluster].getOh() != clustersInEvent[jcluster].getOh()) continue;
+          if (clustersInEvent[icluster].getChamber() != clustersInEvent[jcluster].getChamber()) continue;
           
           chamber2 = clustersInEvent[jcluster].getChamber();
           if (chamber1!=chamber2) continue;

@@ -9,7 +9,8 @@
 #include <TFile.h>
 #include <TTree.h>
 
-#include "TestBeamMapping.h"
+#include "StripMapping.h"
+#include "ChamberMapping.h"
 #include "GEMAMCEventFormat.h"
 
 class GEMUnpacker {
@@ -128,9 +129,10 @@ class GEMUnpacker {
             m_vfatdata->read_tw(m_word);
 
             vfatId = m_vfatdata->Pos();
-            auto hitMapping = mappings[{slot, oh}];
+            auto hitMapping = stripMappings[{slot, oh}];
             eta = hitMapping->to_eta[vfatId];
-            chamber = hitMapping->to_chamber[oh][vfatId];
+            chamber = chamberMapping->to_chamber[slot][oh][vfatId];
+            //chamber = hitMapping->to_chamber[oh][vfatId]; // old, not working
 
             if (verbose) {
               std::cout << "        " << slot << " " << oh << " " << vfatId;
@@ -188,8 +190,9 @@ class GEMUnpacker {
       return true;
     }    
 
-    void unpack(const int max_events, std::map<std::array<int, 2>, TestBeamMapping*> _mappings, bool _verbose) {
-      mappings = _mappings;
+    void unpack(const int max_events, std::map<std::array<int, 2>, StripMapping*> _stripMappings, ChamberMapping* _chamberMapping, bool _verbose) {
+      stripMappings = _stripMappings;
+      chamberMapping = _chamberMapping;
       verbose = _verbose;
 
       if (max_events > 0) std::cout << "Unpacking " << max_events << " events" << std::endl;
@@ -207,8 +210,8 @@ class GEMUnpacker {
       outputtree.Branch("CH", &vecCh);
 
       // digi variable branches
-      outputtree.Branch("digiEta", &vecDigiEta);
       outputtree.Branch("digiChamber", &vecDigiChamber);
+      outputtree.Branch("digiEta", &vecDigiEta);
       outputtree.Branch("digiDirection", &vecDigiDirection);
       outputtree.Branch("digiStrip", &vecDigiStrip);
 
@@ -279,7 +282,8 @@ private:
     std::string ofilename;
     std::string m_isFedKit;
 
-    std::map<std::array<int, 2>, TestBeamMapping*> mappings;
+    std::map<std::array<int, 2>, StripMapping*> stripMappings;
+    ChamberMapping *chamberMapping;
     bool verbose;
 };
  
@@ -296,6 +300,7 @@ int main (int argc, char** argv) {
   
   int max_events = -1;
   bool verbose = false;
+  std::string geometry = "oct2021";
   bool isUnnamed = true;
   for (int iarg=1; iarg<argc; iarg++) {
     std::string arg = argv[iarg];
@@ -303,6 +308,7 @@ int main (int argc, char** argv) {
       isUnnamed = false; // end of unnamed parameters
       if (arg=="--verbose") verbose = true;
       else if (arg=="--events") max_events = atoi(argv[iarg+1]);
+      else if (arg=="--geometry") geometry = argv[iarg+1];
     } else if (isUnnamed) { // unnamed parameters
       if (iarg+1==argc || argv[iarg+1][0]=='-') ofile = arg;
       else ifiles.push_back(arg);
@@ -313,32 +319,39 @@ int main (int argc, char** argv) {
   std::cout << std::endl;
   std::cout << "ofile " << ofile << std::endl;
 
-  TestBeamMapping trackerMapping("mapping/tracker_mapping.csv");
-  TestBeamMapping ge21Mapping("mapping/ge21_mapping.csv");
-  TestBeamMapping me0Mapping("mapping/me0_mapping.csv");
+  std::string mappingBaseDir = "mapping/"+geometry;
+  StripMapping trackerStripMapping(mappingBaseDir+"/tracker_mapping.csv");
+  StripMapping ge21StripMapping(mappingBaseDir+"/ge21_mapping.csv");
+  StripMapping me0StripMapping(mappingBaseDir+"/me0_mapping.csv");
+  ChamberMapping chamberMapping(mappingBaseDir+"/chamber_mapping.csv");
 
   std::cout << "Reading mapping files..." << std::endl;
-  if (trackerMapping.read() < 0) {
+  if (trackerStripMapping.read() < 0) {
 	  std::cout << "Error reading tracker mapping" << std::endl;
 	  return -1;
   }
-  if (ge21Mapping.read() < 0) {
+  if (ge21StripMapping.read() < 0) {
 	  std::cout << "Error reading GE2/1 mapping" << std::endl;
 	  return -1;
   }
-  if (me0Mapping.read() < 0) {
+  if (me0StripMapping.read() < 0) {
 	  std::cout << "Error reading ME0 mapping" << std::endl;
 	  return -1;
   }
-  std::map<std::array<int, 2>, TestBeamMapping*> mappings = {
+  if (me0StripMapping.read() < 0) {
+	  std::cout << "Error reading chamber mapping" << std::endl;
+	  return -1;
+  }
+  std::map<std::array<int, 2>, StripMapping*> stripMappings = {
     // multi-index (slot, oh)
-    {{0, 0}, &ge21Mapping},
-    {{0, 2}, &trackerMapping},
-    {{0, 3}, &trackerMapping},
-    {{1, 0}, &me0Mapping},
+    {{0, 0}, &ge21StripMapping},
+    {{0, 2}, &trackerStripMapping},
+    {{0, 3}, &trackerStripMapping},
+    {{1, 0}, &me0StripMapping},
   };
+  std::cout << "Mapping files ok." << std::endl;
 
   GEMUnpacker * m_unpacker = new GEMUnpacker(ifiles, isFedKit, ofile);
-  m_unpacker->unpack(max_events, mappings, verbose);
+  m_unpacker->unpack(max_events, stripMappings, &chamberMapping, verbose);
   delete m_unpacker;
 }
