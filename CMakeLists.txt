@@ -54,9 +54,6 @@ target_link_libraries(Tracking ${ROOT_LIBRARIES})
 add_executable(Alignment Alignment.cc ${sources} ${headers})
 target_link_libraries(Alignment ${ROOT_LIBRARIES})
 
-add_executable(Analysis Analysis.cc ${sources} ${headers})
-target_link_libraries(Analysis ${ROOT_LIBRARIES})
-
 #----------------------------------------------------------------------------
 # Copy script and analysis files
 #
@@ -83,4 +80,3 @@ configure_file(scripts/angles.py scripts/angles.py COPYONLY)
 install(TARGETS RawToDigi DESTINATION bin)
 install(TARGETS DigiToRechits DESTINATION bin)
 install(TARGETS Tracking DESTINATION bin)
-install(TARGETS Analysis DESTINATION bin)
