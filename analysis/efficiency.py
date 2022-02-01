@@ -44,8 +44,14 @@ def main():
             prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
             rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
             rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
+            prophits_x_glob = ak.flatten(track_tree["prophitGlobalX"].array(entry_stop=args.events))
+            prophits_y_glob = ak.flatten(track_tree["prophitGlobalY"].array(entry_stop=args.events))
             prophits_x = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
             prophits_y = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
+
+            # theta = 0.015515778476258502
+            # prophits_x = prophits_x_glob*np.cos(theta) + prophits_y_glob*np.sin(theta)
+            # prophits_y = -prophits_x_glob*np.sin(theta) + prophits_y_glob*np.cos(theta)
             residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
             print("Matching...")
@@ -75,16 +81,32 @@ def main():
             # matches = (prophits_x-rechits_x)**2+(prophits_y-rechits_y)**2 < matching_cut**2
             # matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
+            """ Plot efficiency map in 1D vs y position """
+            print("Calculating 1D efficiency histogram...")
+            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            matched_histogram, matched_bins_y = np.histogram(matched_y, bins=100)
+            total_histogram, total_bins_y = np.histogram(prophits_y, bins=100)
+            efficiency_1d = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
+            print("Plotting efficiency map 1D...")
+            centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])            
+            eff_ax.plot(centers_y, efficiency_1d)
+            eff_ax.set_xlabel("Position y (mm)")
+            eff_ax.set_ylabel("Efficiency")
+            eff_ax.set_title(
+                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                color='black', weight='normal', loc="left"
+            )
+            eff_ax.text(.87, 1.01, "GE2/1", transform=eff_ax.transAxes)
+            eff_fig.tight_layout()
+            print("Saving result...")
+            eff_fig.savefig(os.path.join(args.odir, "ge21_1d.png"))
+
+
             print("Calculating efficiency map...")
             eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
             matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
             total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
-
-            print(matched_histogram)
-            print(total_histogram)
-            print(ak.count(matched_bins_x), matched_bins_x)
-            print(ak.count(matched_bins_y), matched_bins_y)
 
             if not (np.array_equal(matched_bins_x,total_bins_x) and np.array_equal(matched_bins_y,total_bins_y)):
                 raise ValueError("Different bins between numerator and denominator")
@@ -117,9 +139,11 @@ def main():
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
             #img.set_clim(.85, 1.)
             eff_fig.tight_layout()
-            eff_ax.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GE2/1", horizontalalignment="right")
+            eff_ax.text(.85, 1.01, "GE2/1", transform=eff_ax.transAxes)
+            #eff_ax.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GE2/1", horizontalalignment="right")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21.png"))
+
 
             """ Calculate angular alignment based on HV sectors """
             # choose only points close to 1 sector:
@@ -143,8 +167,8 @@ def main():
                 eff_min = ak.min(eff_slice)
                 y_min = centers_y[eff_slice==eff_min] # where efficiency minimum is
                 min_positions.append(y_min[0])
-            slices_ax.set_xlabel("x (mm)")
-            slices_ax.set_ylabel("y (mm)")
+            slices_ax.set_xlabel("y (mm)")
+            slices_ax.set_ylabel("x (mm)")
             slices_ax.set_zlabel("Efficiency")
             slices_fig.savefig(os.path.join(args.odir, "ge21_slices.png"))
 
@@ -166,6 +190,7 @@ def main():
                 transform=rotation_ax.transAxes,
                 bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
             )
+            rotation_ax.text(.87, 1.01, "GE2/1", transform=rotation_ax.transAxes)
             rotation_ax.set_xlabel("Position x (mm)")
             rotation_ax.set_ylabel("Displacement (mm)")
             rotation_fig.savefig(os.path.join(args.odir, "ge21_rotation.png"))
