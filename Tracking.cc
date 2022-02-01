@@ -87,7 +87,7 @@ int main (int argc, char** argv) {
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
     //detectorGe21.setPosition(0., -215., 0.);
-    detectorGe21.setPosition(0., 0., 0., -0.015515778476258502);
+    detectorGe21.setPosition(0., 0., 0., 0.015515778476258502);
 
     // rechit variables
     int nrechits;
