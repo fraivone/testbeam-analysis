@@ -205,6 +205,8 @@ class GEMUnpacker {
       stripMappings = _stripMappings;
       chamberMapping = _chamberMapping;
 
+      int unpackerStatus = 0;
+
       if (max_events > 0) std::cout << "Unpacking " << max_events << " events" << std::endl;
       else std::cout << "Unpacking all events" << std::endl; 
 
@@ -254,14 +256,18 @@ class GEMUnpacker {
           }
           readStatus = readEvent(slot);
           if (readStatus<0) break; // end of file
-          else if (readStatus>0) return readStatus; // L1A out of sync
+          else if (readStatus>0) {
+            unpackerStatus = readStatus; // L1A out of sync
+            std::cout << "Found mismatching L1As in event " << n_evt << ", stopping..." << std::endl;
+            break;
+          }
         }
         outputtree.Fill();
         n_evt++; 
       }
       std::cout << std::endl;
       hfile->Write();
-      return 0;
+      return unpackerStatus;
     }
 
 private:
