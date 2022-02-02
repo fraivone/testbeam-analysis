@@ -44,42 +44,23 @@ def main():
             prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
             rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
             rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
-            prophits_x_glob = ak.flatten(track_tree["prophitGlobalX"].array(entry_stop=args.events))
-            prophits_y_glob = ak.flatten(track_tree["prophitGlobalY"].array(entry_stop=args.events))
-            prophits_x = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
-            prophits_y = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
+            prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
+            prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
 
-            # theta = 0.015515778476258502
-            # prophits_x = prophits_x_glob*np.cos(theta) + prophits_y_glob*np.sin(theta)
-            # prophits_y = -prophits_x_glob*np.sin(theta) + prophits_y_glob*np.cos(theta)
+            ge21_chamber = 4
+            prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==ge21_chamber]), ak.flatten(prophits_y[prophit_chamber==ge21_chamber])
+            rechits_x, rechits_y = rechits_x[rechit_chamber==ge21_chamber], rechits_y[rechit_chamber==ge21_chamber]
+
             residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
 
             print("Matching...")
-
-            # bin_size = 1.
-            # bins_x, bins_y = np.mgrid[-40:40:bin_size, -40:40:bin_size]
-            # print(bins_x)
-            # print(bins_y)
-
-            # occupancies = 
-            # for bin_x, bin_y in zip(bins_x, bins_y):
-
-            print(prophits_x)
-            print(rechits_x)
-
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
             rechits_x, rechits_y = rechits_x[mask_out], rechits_y[mask_out]
             prophits_x, prophits_y = prophits_x[mask_out], prophits_y[mask_out]
 
             matches = ak.count(rechits_x, axis=1)>0
-            print(matches)
             matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
-            # matchesX = abs(prophits_x-rechits_x) < matching_cut
-            # matchesY = abs(prophits_y-rechits_y) < matching_cut
-            # matches = matchesX & matchesY
-            # matches = (prophits_x-rechits_x)**2+(prophits_y-rechits_y)**2 < matching_cut**2
-            # matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
             """ Plot efficiency map in 1D vs y position """
             print("Calculating 1D efficiency histogram...")
@@ -101,7 +82,7 @@ def main():
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21_1d.png"))
 
-
+            """ Plot 2D efficiency map: """
             print("Calculating efficiency map...")
             eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
@@ -114,17 +95,9 @@ def main():
 
             centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
             centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])
-            # matched_bins_x = matched_bins_x[matched_bins_x < -10]
-            # efficiency = efficiency.T[centers_x < -10].T
-
-            print(ak.count(efficiency), efficiency)
+            print(efficiency)
             
             print("Plotting efficiency map...")
-            # centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
-            # matched_bins_x = matched_bins_x[matched_bins_x < -10]
-            # efficiency = efficiency[centers_x < -10]
-            # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
-            # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
             img = eff_ax.imshow(
                 efficiency,
                 extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
@@ -140,7 +113,6 @@ def main():
             #img.set_clim(.85, 1.)
             eff_fig.tight_layout()
             eff_ax.text(.85, 1.01, "GE2/1", transform=eff_ax.transAxes)
-            #eff_ax.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GE2/1", horizontalalignment="right")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21.png"))
 
@@ -194,6 +166,67 @@ def main():
             rotation_ax.set_xlabel("Position x (mm)")
             rotation_ax.set_ylabel("Displacement (mm)")
             rotation_fig.savefig(os.path.join(args.odir, "ge21_rotation.png"))
+
+        if args.detector=="me0":
+            rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
+            prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
+            rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
+            prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
+            rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
+            rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
+            prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
+            prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
+
+            me0_chamber = 5
+            prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==me0_chamber]), ak.flatten(prophits_y[prophit_chamber==me0_chamber])
+            rechits_x, rechits_y = rechits_x[rechit_chamber==me0_chamber], rechits_y[rechit_chamber==me0_chamber]
+
+            print("Matching...")
+            mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
+            rechits_x, rechits_y = rechits_x[mask_out], rechits_y[mask_out]
+            prophits_x, prophits_y = prophits_x[mask_out], prophits_y[mask_out]
+            matches = ak.count(rechits_x, axis=1)>0
+            matched_x, matched_y = prophits_x[matches], prophits_y[matches]
+
+            print("Calculating efficiency map...")
+            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
+            matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
+            total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
+
+            print(matched_histogram)
+            print(total_histogram)
+            print(ak.count(matched_bins_x), matched_bins_x)
+            print(ak.count(matched_bins_y), matched_bins_y)
+
+            if not (np.array_equal(matched_bins_x,total_bins_x) and np.array_equal(matched_bins_y,total_bins_y)):
+                raise ValueError("Different bins between numerator and denominator")
+            efficiency = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
+
+            print(ak.count(efficiency), efficiency)
+            
+            print("Plotting efficiency map...")
+            img = eff_ax.imshow(
+                efficiency,
+                extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
+                origin="lower"
+            )
+            eff_ax.set_xlabel("x (mm)")
+            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_title(
+                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                color='black', weight='normal', loc="left"
+            )
+            # cax = eff_fig.add_axes([
+            #     eff_ax.get_position().x1+0.01,
+            #     eff_ax.get_position().y0,
+            #     0.02,eff_ax.get_position().height
+            # ])
+            eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
+            eff_fig.tight_layout()
+            eff_ax.text(.85, 1.01, "ME0", transform=eff_ax.transAxes)
+            print("Saving result...")
+            eff_fig.savefig(os.path.join(args.odir, "me0.png"))
 
         elif args.detector=="tracker":
             rechits_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)

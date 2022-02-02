@@ -6,21 +6,18 @@
 class Digi{
     
     public:
-        int fOh, fEta, fStrip;
+        int fChamber, fEta, fStrip;
 
         Digi() {}
-        Digi(int oh, int eta, int strip);
+        Digi(int chamber, int eta, int strip);
 
-        int getOh();
+        int getChamber();
         int getEta();
         int getStrip();
 
         void print() {
-            std::cout << fOh << "oh." << fEta << "eta." << fStrip << "strip" << std::endl;
+            std::cout << fChamber << "chamber." << fEta << "eta." << fStrip << "strip" << std::endl;
         }
-        
-    //def __repr__(self):
-    //    return f"Digi: {self.chamber},{self.xy},{self.strip}"
 };
 
 #endif

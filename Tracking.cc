@@ -79,16 +79,22 @@ int main (int argc, char** argv) {
       DetectorTracker(3, 2, 89.5, 89.5, 358),
       DetectorTracker(3, 3, 89.5, 89.5, 358),
     };
-    DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
-    // TODO: add ME0
+    DetectorLarge detectorsLarge[2] = {
+      DetectorLarge(0, 4, 501.454, 659.804, 430.6, 4, 384), // GE2/1
+      DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384) // ME0
+    };
+    std::map<int, DetectorGeometry*> detectorsMap;
+    detectorsMap[4] = &detectorsLarge[0];
+    detectorsMap[5] = &detectorsLarge[1];
+    // TODO: add 20x10
 
     detectorTrackers[0].setPosition(+2.06244, +0.269035, -(697+254+294), trackerAngles[0]);
     detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
-    //detectorGe21.setPosition(0., -215., 0.);
-    detectorGe21.setPosition(0., 0., 0., 0.015515778476258502);
-
+    detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
+    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966);
+    
     // rechit variables
     int nrechits;
     std::vector<int> *vecRechitChamber = new std::vector<int>();
@@ -327,37 +333,45 @@ int main (int argc, char** argv) {
       }
       track.fit();
 
-      // extrapolate track on GE2/1
-      hit = track.propagate(&detectorGe21);
-      prophitsChamber.push_back(detectorGe21.getChamber());
-      prophitsEta.push_back(hit.getEta());
-      prophitsGlobalX.push_back(hit.getGlobalX());
-      prophitsGlobalY.push_back(hit.getGlobalY());
-      prophitsXError.push_back(hit.getErrX());
-      prophitsYError.push_back(hit.getErrY());
-      prophitsLocalX.push_back(hit.getLocalX());
-      prophitsLocalY.push_back(hit.getLocalY());
-      prophitsLocalR.push_back(hit.getLocalR());
-      prophitsLocalPhi.push_back(hit.getLocalPhi());
+      // extrapolate track on large detectors
+      for (auto detector:detectorsLarge) {
+        hit = track.propagate(&detector);
+        prophitsChamber.push_back(detector.getChamber());
+        prophitsEta.push_back(hit.getEta());
+        prophitsGlobalX.push_back(hit.getGlobalX());
+        prophitsGlobalY.push_back(hit.getGlobalY());
+        prophitsXError.push_back(hit.getErrX());
+        prophitsYError.push_back(hit.getErrY());
+        prophitsLocalX.push_back(hit.getLocalX());
+        prophitsLocalY.push_back(hit.getLocalY());
+        prophitsLocalR.push_back(hit.getLocalR());
+        prophitsLocalPhi.push_back(hit.getLocalPhi());
 
-      if (verbose) {
-        std::cout << "  Chamber GE2/1" << std::endl;
-        std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
-        std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
-        std::cout << std::endl;
-        std::cout << "    " << "prophit " << "eta=" << hit.getEta() << ", ";
-        std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
-        std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
-        std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
-        std::cout << std::endl;
+        if (verbose) {
+          std::cout << "  Chamber " << detector.getChamber() << std::endl;
+          std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
+          std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
+          std::cout << std::endl;
+          std::cout << "    " << "prophit " << "eta=" << hit.getEta() << ", ";
+          std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
+          std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
+          std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
+          std::cout << std::endl;
+        }
       }
 
       // save all 1D rechits local coordinates
       for (int iRechit=0; iRechit<vecRechitChamber->size(); iRechit++) {
         chamber = vecRechitChamber->at(iRechit);
-        hit = Hit::fromLocal(&detectorGe21,
-          vecRechitX->at(iRechit), vecRechitY->at(iRechit), 0., 0., 0.
-        );
+        if (verbose) std::cout << "  Chamber " << chamber << std::endl;
+        if (detectorsMap.count(chamber)>0) {
+          hit = Hit::fromLocal(detectorsMap.at(chamber),
+            vecRechitX->at(iRechit), vecRechitY->at(iRechit), 0., 0., 0.
+          );
+        } else {
+          if (verbose) std::cout << "    Skipping, no mapping found" << std::endl;
+          continue;
+        }
         rechitsChamber.push_back(chamber);
         rechitsEta.push_back(hit.getEta());
         rechitsLocalX.push_back(hit.getLocalX());
