@@ -31,23 +31,28 @@ class GEMUnpacker {
         if (file != NULL) std::fclose(file);
     }
 
-    bool readEvent(std::FILE *file, int _slot) {
-      slot = _slot;
+    void setParameters(bool _verbose, bool _checkSyncronization) {
+      verbose = _verbose;
+      checkSyncronization = _checkSyncronization;
+    }
+
+    int readEvent(int slot) {
+      // slot = _slot;
 
       // read and print FEROL headers
       if (m_isFedKit == "ferol") {
-        std::size_t sz = std::fread(&m_word, sizeof(uint64_t), 1, file);
-        if (sz == 0 ) return false;
+        std::size_t sz = std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+        if (sz == 0 ) return -1; // end of file reached
         //printf("%016llX\n", m_word);
-        std::fread(&m_word, sizeof(uint64_t), 1, file);
+        std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
         //printf("%016llX\n", m_word);
-        std::fread(&m_word, sizeof(uint64_t), 1, file);
+        std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
         //printf("%016llX\n", m_word);
         // ferol headers read and printed, now read CDF header
         //std::fread(&m_word, sizeof(uint64_t), 1, m_file);
       } else {
-        std::size_t sz = std::fread(&m_word, sizeof(uint64_t), 1, file);
-        if (sz == 0 ) return false;
+        std::size_t sz = std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+        if (sz == 0 ) return -1; // end of file reached
         //read and print "BADC0FFEEBADCAFE" and another artificial header
         //printf("%016llX\n", m_word);
         //std::fread(&m_word, sizeof(uint64_t), 1, m_file);
@@ -75,26 +80,40 @@ class GEMUnpacker {
       vfatId = 0;
       oh = 0;
 
-      std::fread(&m_word, 8, 1, file);
+      std::fread(&m_word, 8, 1, m_files.at(slot));
       //printf("AMC HEADER1\n");
       //printf("%016llX\n", m_word);
       m_amcEvent->setAMCheader1(m_word);
-      std::fread(&m_word, 8, 1, file);
+      std::fread(&m_word, 8, 1, m_files.at(slot));
       //printf("AMC HEADER2\n");
       //printf("%016llX\n", m_word);
       m_amcEvent->setAMCheader2(m_word);
-      std::fread(&m_word, sizeof(uint64_t), 1, file);
+      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
       m_amcEvent->setGEMeventHeader(m_word);
 
+      l1a = m_amcEvent->L1A();
+      if (checkSyncronization) {
+        for (int otherL1A:eventVecL1A) {
+          if (l1a!=otherL1A) {
+            if (verbose) {
+              std::cout << "ERROR: different L1As in event: ";
+              std::cout << l1a << " " << otherL1A << ", exiting..." << std::endl;
+            }
+            return 128; // l1a out of sync
+          }
+        }
+        eventVecL1A.push_back(l1a);
+      }
       latency = m_amcEvent->Latency();
       pulse_stretch = m_amcEvent->PULSE_STRETCH();
+
       //printf("GEM EVENT HEADER\n");
       //printf("%016llX\n", m_word);
       // fill the geb data here
       //std::cout << "GDcount = " << m_amcEvent->GDcount() << std::endl;
-      for (unsigned short j = 0; j < m_amcEvent->GDcount(); j++){
+      for (unsigned short j = 0; j < m_amcEvent->GDcount(); j++) {
           GEBdata * m_gebdata = new GEBdata();
-          std::fread(&m_word, sizeof(uint64_t), 1, file);
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
           m_gebdata->setChamberHeader(m_word);
           //printf("GEM CHAMBER HEADER\n");
           //printf("%016llX\n", m_word);
@@ -106,10 +125,10 @@ class GEMUnpacker {
           //printf("OH %d\n",m_gebdata->InputID());
           
           oh = m_gebdata->InputID();
-          for (unsigned short k = 0; k < m_nvb; k++){
+          for (unsigned short k = 0; k < m_nvb; k++) {
             VFATdata * m_vfatdata = new VFATdata();
             // read 3 vfat block words, totaly 192 bits
-            std::fread(&m_word, sizeof(uint64_t), 1, file);
+            std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
             //printf("VFAT WORD 1 ");
             //std::cout << std::bitset<64>(m_word) << std::endl;
             //printf("%016llX\n", m_word);
@@ -117,12 +136,12 @@ class GEMUnpacker {
             //printf("%016llX\n", 0x3f);
             //printf("%016llX\n", 0x3f & (m_word >> 56));
             m_vfatdata->read_fw(m_word);
-            std::fread(&m_word, sizeof(uint64_t), 1, file);
+            std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
             //printf("VFAT WORD 2 ");
             //std::cout << std::bitset<64>(m_word) << std::endl;
             //printf("%016llX\n", m_word);
             m_vfatdata->read_sw(m_word);
-            std::fread(&m_word, sizeof(uint64_t), 1, file);
+            std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
             //printf("VFAT WORD 3 ");
             //std::cout << std::bitset<64>(m_word) << std::endl;
             //printf("%016llX\n", m_word);
@@ -132,21 +151,13 @@ class GEMUnpacker {
             auto hitMapping = stripMappings[{slot, oh}];
             eta = hitMapping->to_eta[vfatId];
             chamber = chamberMapping->to_chamber[slot][oh][vfatId];
-            //chamber = hitMapping->to_chamber[oh][vfatId]; // old, not working
 
             if (verbose) {
               std::cout << "        " << slot << "\t" << oh << "\t" << vfatId;
-              std::cout << "\t" << m_amcEvent->Onum() << "\t" << m_amcEvent->BX() << "\t" << m_amcEvent->L1A();
+              std::cout << "\t" << m_amcEvent->Onum() << "\t" << m_amcEvent->BX() << "\t" << l1a;
               std::cout << "\t" << eta << "\t" << chamber << std::endl;
             }
-            /*if (oh>0) {
-              eta = mappingTracker.to_eta[vfatId];
-              chamber = mapping.to_chamber_tracker[oh][vfatId];
-            } else {
-              eta = mapping.to_eta_ge21[vfatId];
-              chamber = mapping.to_chamber_ge21[oh][vfatId];
-            }*/
-            
+
             direction = eta%2;
             for (int i=0;i<64;i++) {
               if (m_vfatdata->lsData() & (1LL << i)) {
@@ -174,26 +185,25 @@ class GEMUnpacker {
             }
             delete m_vfatdata;
           }
-          std::fread(&m_word, sizeof(uint64_t), 1, file);
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
           m_gebdata->setChamberTrailer(m_word);
           m_amcEvent->g_add(*m_gebdata);
           delete m_gebdata;
       }
-      std::fread(&m_word, sizeof(uint64_t), 1, file);
+      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
       m_amcEvent->setGEMeventTrailer(m_word);
-      std::fread(&m_word, sizeof(uint64_t), 1, file);
+      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
       //printf("AMC TRALIER\n");
       //printf("%016llX\n", m_word);
       m_amcEvent->setAMCTrailer(m_word);
 
       delete m_amcEvent;
-      return true;
+      return 0;
     }    
 
-    void unpack(const int max_events, std::map<std::array<int, 2>, StripMapping*> _stripMappings, ChamberMapping* _chamberMapping, bool _verbose) {
+    int unpack(const int max_events, std::map<std::array<int, 2>, StripMapping*> _stripMappings, ChamberMapping* _chamberMapping) {
       stripMappings = _stripMappings;
       chamberMapping = _chamberMapping;
-      verbose = _verbose;
 
       if (max_events > 0) std::cout << "Unpacking " << max_events << " events" << std::endl;
       else std::cout << "Unpacking all events" << std::endl; 
@@ -233,27 +243,36 @@ class GEMUnpacker {
         vecDigiDirection.clear();
         vecDigiStrip.clear();
 
+        eventVecL1A.clear();
         // read event from raw:
         if (verbose) std::cout << "Event " << n_evt << std::endl;
-        for (slot=0; slot<m_files.size(); slot++) {
+        for (int slot=0; slot<m_files.size(); slot++) {
           // slot == file index. To be improved?
           if (verbose) {
             std::cout << "    File " << m_files.at(slot) << std::endl;
             std::cout << "        " << "slot\toh\tvfat\tOC\tBX\tL1A\teta\tchamber" << std::endl;
           }
-          if (!readEvent(m_files.at(slot), slot)) break;
+          readStatus = readEvent(slot);
+          if (readStatus<0) break; // end of file
+          else if (readStatus>0) return readStatus; // L1A out of sync
         }
         outputtree.Fill();
         n_evt++; 
       }
       std::cout << std::endl;
       hfile->Write();
+      return 0;
     }
+
 private:
+    int readStatus = 0;
+    
     /* branch and support variables: */
     int nhits;
     int latency;
     int pulse_stretch;
+    int l1a;
+    std::vector<int> eventVecL1A;
     // raw variables
     std::vector<int> vecSlot;
     std::vector<int> vecOh;
@@ -266,7 +285,7 @@ private:
     std::vector<int> vecDigiStrip; // 0 to 357
     // support variables
     int vfatId = 0;
-    int slot = 0;
+    //int slot = 0;
     int oh = 0;
     int eta = 0;
     int strip = 0;
@@ -287,14 +306,14 @@ private:
 
     std::map<std::array<int, 2>, StripMapping*> stripMappings;
     ChamberMapping *chamberMapping;
-    bool verbose;
+    bool verbose=false, checkSyncronization=false;
 };
  
 int main (int argc, char** argv) {
   std::cout << "Running GEM unpacker..." << std::endl;
   if (argc<4) 
   {
-    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--format ferol/sdram]" << std::endl;
+    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--format ferol/sdram] [--verbose] [--check-sync]" << std::endl;
     return 0;
   }
   std::vector<std::string> ifiles;
@@ -302,14 +321,16 @@ int main (int argc, char** argv) {
   std::string isFedKit = "ferol";
   
   int max_events = -1;
-  bool verbose = false;
   std::string geometry = "oct2021";
+  bool verbose = false;
+  bool checkSyncronization = false;
   bool isUnnamed = true;
   for (int iarg=1; iarg<argc; iarg++) {
     std::string arg = argv[iarg];
     if (arg[0]=='-') { // parse named parameters
       isUnnamed = false; // end of unnamed parameters
       if (arg=="--verbose") verbose = true;
+      else if (arg=="--check-sync") checkSyncronization = true;
       else if (arg=="--events") max_events = atoi(argv[iarg+1]);
       else if (arg=="--geometry") geometry = argv[iarg+1];
     } else if (isUnnamed) { // unnamed parameters
@@ -329,19 +350,19 @@ int main (int argc, char** argv) {
   ChamberMapping chamberMapping(mappingBaseDir+"/chamber_mapping.csv");
 
   std::cout << "Reading mapping files..." << std::endl;
-  if (trackerStripMapping.read() < 0) {
+  if (trackerStripMapping.read()<0) {
 	  std::cout << "Error reading tracker mapping" << std::endl;
 	  return -1;
   }
-  if (ge21StripMapping.read() < 0) {
+  if (ge21StripMapping.read()<0) {
 	  std::cout << "Error reading GE2/1 mapping" << std::endl;
 	  return -1;
   }
-  if (me0StripMapping.read() < 0) {
+  if (geometry=="nov2021" && me0StripMapping.read()<0) {
 	  std::cout << "Error reading ME0 mapping" << std::endl;
 	  return -1;
   }
-  if (geometry=="nov2021" && chamberMapping.read() < 0) {
+  if (chamberMapping.read()<0) {
 	  std::cout << "Error reading chamber mapping" << std::endl;
 	  return -1;
   }
@@ -355,6 +376,8 @@ int main (int argc, char** argv) {
   std::cout << "Mapping files ok." << std::endl;
 
   GEMUnpacker * m_unpacker = new GEMUnpacker(ifiles, isFedKit, ofile);
-  m_unpacker->unpack(max_events, stripMappings, &chamberMapping, verbose);
+  m_unpacker->setParameters(verbose, checkSyncronization);
+  int unpackerStatus = m_unpacker->unpack(max_events, stripMappings, &chamberMapping);
   delete m_unpacker;
+  return unpackerStatus;
 }
