@@ -17,7 +17,6 @@ ChamberMapping::ChamberMapping(std::string mappingFilePath) {
 int ChamberMapping::read() {
 	CsvReader mappingReader(fMappingFilePath);
 	if (mappingReader.read()<0) return -1;
-	std::cout << "Mapping table:" << std::endl;
 
 	int slot, oh, vfat, chamber;
 	// iterate on rows:

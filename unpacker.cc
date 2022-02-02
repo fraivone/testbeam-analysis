@@ -135,9 +135,9 @@ class GEMUnpacker {
             //chamber = hitMapping->to_chamber[oh][vfatId]; // old, not working
 
             if (verbose) {
-              std::cout << "        " << slot << " " << oh << " " << vfatId;
-              std::cout << "    " << m_amcEvent->Onum() << " " << m_amcEvent->BX() << " " << m_amcEvent->L1A();
-              std::cout << "    " << eta << " " << chamber << std::endl;
+              std::cout << "        " << slot << "\t" << oh << "\t" << vfatId;
+              std::cout << "\t" << m_amcEvent->Onum() << "\t" << m_amcEvent->BX() << "\t" << m_amcEvent->L1A();
+              std::cout << "\t" << eta << "\t" << chamber << std::endl;
             }
             /*if (oh>0) {
               eta = mappingTracker.to_eta[vfatId];
@@ -237,7 +237,10 @@ class GEMUnpacker {
         if (verbose) std::cout << "Event " << n_evt << std::endl;
         for (slot=0; slot<m_files.size(); slot++) {
           // slot == file index. To be improved?
-          if (verbose) std::cout << "    File " << m_files.at(slot) << std::endl;
+          if (verbose) {
+            std::cout << "    File " << m_files.at(slot) << std::endl;
+            std::cout << "        " << "slot\toh\tvfat\tOC\tBX\tL1A\teta\tchamber" << std::endl;
+          }
           if (!readEvent(m_files.at(slot), slot)) break;
         }
         outputtree.Fill();
@@ -338,7 +341,7 @@ int main (int argc, char** argv) {
 	  std::cout << "Error reading ME0 mapping" << std::endl;
 	  return -1;
   }
-  if (me0StripMapping.read() < 0) {
+  if (chamberMapping.read() < 0) {
 	  std::cout << "Error reading chamber mapping" << std::endl;
 	  return -1;
   }
