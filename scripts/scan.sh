@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Run an efficiency HV scan with multiple runs
+# TODO: Support rate scan
+
 #runs=(run_20211102_1056 run_20211102_1210 run_20211102_1349 run_20211102_1609) # tracker hv scan
 #runs=(run_20211030_2213 run_20211030_2317 run_20211031_0016 run_20211031_0213 run_20211031_0222 run_20211031_0321 run_20211031_0503 run_20211031_0606 run_20211031_0707) # ge21 hv scan
 #runs=(run_20211102_1056 run_20211030_2213) # missing runs

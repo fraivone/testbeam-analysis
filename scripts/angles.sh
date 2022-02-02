@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Calculate angular corrections
+# by iterating track reconstruction
+
 run=$1
 odir=$2
 events=$3
