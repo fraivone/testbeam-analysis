@@ -148,9 +148,9 @@ class GEMUnpacker {
             m_vfatdata->read_tw(m_word);
 
             vfatId = m_vfatdata->Pos();
-            auto hitMapping = stripMappings[{slot, oh}];
-            eta = hitMapping->to_eta[vfatId];
             chamber = chamberMapping->to_chamber[slot][oh][vfatId];
+            StripMapping *stripMapping = stripMappings.at(chamber);
+            eta = stripMapping->to_eta[vfatId];
 
             if (verbose) {
               std::cout << "        " << slot << "\t" << oh << "\t" << vfatId;
@@ -168,7 +168,7 @@ class GEMUnpacker {
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
-                vecDigiStrip.push_back(hitMapping->to_strip[vfatId][i]);
+                vecDigiStrip.push_back(stripMapping->to_strip[vfatId][i]);
                 nhits++;
               }
               if (m_vfatdata->msData() & (1LL << i)) {
@@ -179,7 +179,7 @@ class GEMUnpacker {
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
-                vecDigiStrip.push_back(hitMapping->to_strip[vfatId][i+64]);
+                vecDigiStrip.push_back(stripMapping->to_strip[vfatId][i+64]);
                 nhits++;
               }
             }
@@ -201,7 +201,7 @@ class GEMUnpacker {
       return 0;
     }    
 
-    int unpack(const int max_events, std::map<std::array<int, 2>, StripMapping*> _stripMappings, ChamberMapping* _chamberMapping) {
+    int unpack(const int max_events, std::map<int, StripMapping*> _stripMappings, ChamberMapping* _chamberMapping) {
       stripMappings = _stripMappings;
       chamberMapping = _chamberMapping;
 
@@ -310,7 +310,7 @@ private:
     std::string ofilename;
     std::string m_isFedKit;
 
-    std::map<std::array<int, 2>, StripMapping*> stripMappings;
+    std::map<int, StripMapping*> stripMappings;
     ChamberMapping *chamberMapping;
     bool verbose=false, checkSyncronization=false;
 };
@@ -353,6 +353,7 @@ int main (int argc, char** argv) {
   StripMapping trackerStripMapping(mappingBaseDir+"/tracker_mapping.csv");
   StripMapping ge21StripMapping(mappingBaseDir+"/ge21_mapping.csv");
   StripMapping me0StripMapping(mappingBaseDir+"/me0_mapping.csv");
+  StripMapping rectangularStripMapping(mappingBaseDir+"/20x10_mapping.csv");
   ChamberMapping chamberMapping(mappingBaseDir+"/chamber_mapping.csv");
 
   std::cout << "Reading mapping files..." << std::endl;
@@ -368,22 +369,30 @@ int main (int argc, char** argv) {
 	  std::cout << "Error reading ME0 mapping" << std::endl;
 	  return -1;
   }
+  if (geometry=="nov2021" && rectangularStripMapping.read()<0) {
+	  std::cout << "Error reading 20x10 mapping" << std::endl;
+	  return -1;
+  }
+  std::cout << "Here" << std::endl;
   if (chamberMapping.read()<0) {
 	  std::cout << "Error reading chamber mapping" << std::endl;
 	  return -1;
   }
-  std::map<std::array<int, 2>, StripMapping*> stripMappings = {
-    // multi-index (slot, oh)
-    {{0, 0}, &ge21StripMapping},
-    {{0, 2}, &trackerStripMapping},
-    {{0, 3}, &trackerStripMapping},
-    {{1, 0}, &me0StripMapping},
-  };
   std::cout << "Mapping files ok." << std::endl;
+  std::map<int, StripMapping*> stripMappings = {
+    {0, &trackerStripMapping},
+    {1, &trackerStripMapping},
+    {2, &trackerStripMapping},
+    {3, &trackerStripMapping},
+    {4, &ge21StripMapping},
+    {5, &me0StripMapping},
+    {6, &rectangularStripMapping}
+  };
 
   GEMUnpacker * m_unpacker = new GEMUnpacker(ifiles, isFedKit, ofile);
   m_unpacker->setParameters(verbose, checkSyncronization);
   int unpackerStatus = m_unpacker->unpack(max_events, stripMappings, &chamberMapping);
   delete m_unpacker;
+  std::cout << "Output file saved to " << ofile << std::endl;
   return unpackerStatus;
 }

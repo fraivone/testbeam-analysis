@@ -79,21 +79,24 @@ int main (int argc, char** argv) {
       DetectorTracker(3, 2, 89.5, 89.5, 358),
       DetectorTracker(3, 3, 89.5, 89.5, 358),
     };
-    DetectorLarge detectorsLarge[2] = {
+    DetectorLarge detectorsLarge[3] = {
       DetectorLarge(0, 4, 501.454, 659.804, 430.6, 4, 384), // GE2/1
-      DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384) // ME0
+      DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384), // ME0
+      DetectorLarge(3, 6, 179, 179, 89.5, 1, 512) // 20x10
     };
-    std::map<int, DetectorGeometry*> detectorsMap;
-    detectorsMap[4] = &detectorsLarge[0];
-    detectorsMap[5] = &detectorsLarge[1];
-    // TODO: add 20x10
+    std::map<int, DetectorGeometry*> detectorsMap = {
+      {4, &detectorsLarge[0]},
+      {5, &detectorsLarge[1]},
+      {6, &detectorsLarge[2]}
+    };
 
     detectorTrackers[0].setPosition(+2.06244, +0.269035, -(697+254+294), trackerAngles[0]);
     detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
     detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
-    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966);
+    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°
+    detectorsLarge[2].setPosition(0., 0., 0., 0);
     
     // rechit variables
     int nrechits;

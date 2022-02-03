@@ -64,6 +64,7 @@ configure_file(mapping/oct2021/chamber_mapping.csv mapping/oct2021/chamber_mappi
 configure_file(mapping/nov2021/tracker_mapping.csv mapping/nov2021/tracker_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/ge21_mapping.csv mapping/nov2021/ge21_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/me0_mapping.csv mapping/nov2021/me0_mapping.csv COPYONLY)
+configure_file(mapping/nov2021/20x10_mapping.csv mapping/nov2021/20x10_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/chamber_mapping.csv mapping/nov2021/chamber_mapping.csv COPYONLY)
 
 configure_file(analysis/alignment.py analysis/alignment.py COPYONLY)

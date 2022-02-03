@@ -4,8 +4,6 @@ class StripMapping {
     
     public:
 
-	    std::string fMappingFilePath;
-
 	    StripMapping(std::string mappingFile);
 	    
 	    int read();
@@ -13,4 +11,7 @@ class StripMapping {
 
 	    int to_strip[24][128];
 	    int to_eta[12];
+	
+	private: 
+	    std::string fMappingFilePath;
 };

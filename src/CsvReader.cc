@@ -31,11 +31,9 @@ int CsvReader::read() {
 
 			if (lineIndex==0) { // parse header
 				fColumnNames = mappingRow;
-				// for (auto colName:fColumnNames) {
-				// 	fElements[colName] = std::vector<T>();
-				// }
 			} else { // parse mapping row
 				for (int icol=0; icol<mappingRow.size(); icol++) {
+					// in case of generic class:
 					// std::stringstream convertToT(mappingRow[icol]);
 					// T value;
 					// convertToT >> value;
