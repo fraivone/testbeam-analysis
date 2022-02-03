@@ -255,12 +255,12 @@ class GEMUnpacker {
             std::cout << "        " << "slot\toh\tvfat\tOC\tBX\tL1A\teta\tchamber" << std::endl;
           }
           readStatus = readEvent(slot);
-          if (readStatus<0) break; // end of file
-          else if (readStatus>0) {
-            unpackerStatus = readStatus; // L1A out of sync
-            std::cout << "Found mismatching L1As in event " << n_evt << ", stopping..." << std::endl;
-            break;
-          }
+        }
+        if (readStatus<0) break; // end of file
+        else if (readStatus==128) {
+          unpackerStatus = readStatus; // L1A out of sync
+          std::cout << "Found mismatching L1As in event " << n_evt << ", stopping..." << std::endl;
+          break;
         }
         outputtree.Fill();
         n_evt++; 
