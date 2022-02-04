@@ -228,6 +228,61 @@ def main():
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "me0.png"))
 
+        if args.detector=="20x10":
+            rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
+            prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
+            rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
+            prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
+            rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
+            rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
+            prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
+            prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
+
+            rectangular_chamber = 6
+            prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==rectangular_chamber]), ak.flatten(prophits_y[prophit_chamber==rectangular_chamber])
+            rechits_x, rechits_y = rechits_x[rechit_chamber==rectangular_chamber], rechits_y[rechit_chamber==rectangular_chamber]
+
+            print("Matching...")
+            mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
+            rechits_x, rechits_y = rechits_x[mask_out], rechits_y[mask_out]
+            prophits_x, prophits_y = prophits_x[mask_out], prophits_y[mask_out]
+            matches = ak.count(rechits_x, axis=1)>0
+            matched_x, matched_y = prophits_x[matches], prophits_y[matches]
+
+            print("Calculating efficiency map...")
+            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
+            matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
+            total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
+
+            print(matched_histogram)
+            print(total_histogram)
+            print(ak.count(matched_bins_x), matched_bins_x)
+            print(ak.count(matched_bins_y), matched_bins_y)
+
+            if not (np.array_equal(matched_bins_x,total_bins_x) and np.array_equal(matched_bins_y,total_bins_y)):
+                raise ValueError("Different bins between numerator and denominator")
+            efficiency = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
+
+            print(ak.count(efficiency), efficiency)
+            print("Plotting efficiency map...")
+            img = eff_ax.imshow(
+                efficiency,
+                extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
+                origin="lower"
+            )
+            eff_ax.set_xlabel("x (mm)")
+            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_title(
+                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                color='black', weight='normal', loc="left"
+            )
+            eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
+            eff_fig.tight_layout()
+            eff_ax.text(.83, 1.01, "20x10", transform=eff_ax.transAxes)
+            print("Saving result...")
+            eff_fig.savefig(os.path.join(args.odir, "20x10.png"))
+
         elif args.detector=="tracker":
             rechits_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)
             rechits_x = track_tree["rechits2D_X"].array(entry_stop=args.events)
