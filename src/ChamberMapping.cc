@@ -8,27 +8,21 @@
 #include <algorithm>
 
 #include "ChamberMapping.h"
-#include "CsvReader.h"
+#include "DataFrame.h"
 
 ChamberMapping::ChamberMapping(std::string mappingFilePath) {
-	fMappingFilePath = mappingFilePath;
-}
-
-int ChamberMapping::read() {
-	CsvReader mappingReader(fMappingFilePath);
-	if (mappingReader.read()<0) return -1;
+	DataFrame mappingDataFrame = DataFrame::fromCsv(mappingFilePath);
 
 	int slot, oh, vfat, chamber;
 	// iterate on rows:
-	for (int irow=0; irow<mappingReader.getNRows(); irow++) {
-		slot = std::stoi(mappingReader.getElement("slot", irow));
-		oh = std::stoi(mappingReader.getElement("oh", irow));
-		vfat = std::stoi(mappingReader.getElement("vfat", irow));
-		chamber = std::stoi(mappingReader.getElement("chamber", irow));
+	for (int irow=0; irow<mappingDataFrame.getNRows(); irow++) {
+		slot = std::stoi(mappingDataFrame.getElement("slot", irow));
+		oh = std::stoi(mappingDataFrame.getElement("oh", irow));
+		vfat = std::stoi(mappingDataFrame.getElement("vfat", irow));
+		chamber = std::stoi(mappingDataFrame.getElement("chamber", irow));
 
 		to_chamber[slot][oh][vfat] = chamber;
 	}
-	return 0;
 }
 
 void ChamberMapping::print() {

@@ -8,30 +8,24 @@
 #include <algorithm>
 
 #include "StripMapping.h"
-#include "CsvReader.h"
+#include "DataFrame.h"
 
 StripMapping::StripMapping(std::string mappingFilePath) {
-	fMappingFilePath = mappingFilePath;
-}
-
-int StripMapping::read() {
-	CsvReader mappingReader(fMappingFilePath);
-	if (mappingReader.read()<0) return -1;
+	DataFrame mappingDataFrame = DataFrame::fromCsv(mappingFilePath);
 
 	int vfatId, vfatChannel, eta, strip;
 	// iterate on rows:
-	for (int irow=0; irow<mappingReader.getNRows(); irow++) {
+	for (int irow=0; irow<mappingDataFrame.getNRows(); irow++) {
 		// unused: oh = std::stoi(mappingRow[columnIndex["oh"]]);
 		// unused: chamber = std::stoi(mappingRow[columnIndex["chamber"]]);
-		vfatId = std::stoi(mappingReader.getElement("vfatId", irow));
-		vfatChannel = std::stoi(mappingReader.getElement("vfatCh", irow));
-		eta = std::stoi(mappingReader.getElement("iEta", irow));
-		strip = std::stoi(mappingReader.getElement("strip", irow));
+		vfatId = std::stoi(mappingDataFrame.getElement("vfatId", irow));
+		vfatChannel = std::stoi(mappingDataFrame.getElement("vfatCh", irow));
+		eta = std::stoi(mappingDataFrame.getElement("iEta", irow));
+		strip = std::stoi(mappingDataFrame.getElement("strip", irow));
 
 		to_eta[vfatId] = eta;
 		to_strip[vfatId][vfatChannel] = strip;
 	}
-	return 0;
 }
 
 void StripMapping::print() {

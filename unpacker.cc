@@ -149,6 +149,7 @@ class GEMUnpacker {
 
             vfatId = m_vfatdata->Pos();
             chamber = chamberMapping->to_chamber[slot][oh][vfatId];
+            if (stripMappings.count(chamber)==0) return 0;
             StripMapping *stripMapping = stripMappings.at(chamber);
             eta = stripMapping->to_eta[vfatId];
 
@@ -349,36 +350,15 @@ int main (int argc, char** argv) {
   std::cout << std::endl;
   std::cout << "ofile " << ofile << std::endl;
 
+  std::cout << "Reading mapping files..." << std::endl;
   std::string mappingBaseDir = "mapping/"+geometry;
   StripMapping trackerStripMapping(mappingBaseDir+"/tracker_mapping.csv");
   StripMapping ge21StripMapping(mappingBaseDir+"/ge21_mapping.csv");
   StripMapping me0StripMapping(mappingBaseDir+"/me0_mapping.csv");
   StripMapping rectangularStripMapping(mappingBaseDir+"/20x10_mapping.csv");
   ChamberMapping chamberMapping(mappingBaseDir+"/chamber_mapping.csv");
-
-  std::cout << "Reading mapping files..." << std::endl;
-  if (trackerStripMapping.read()<0) {
-	  std::cout << "Error reading tracker mapping" << std::endl;
-	  return -1;
-  }
-  if (ge21StripMapping.read()<0) {
-	  std::cout << "Error reading GE2/1 mapping" << std::endl;
-	  return -1;
-  }
-  if (geometry=="nov2021" && me0StripMapping.read()<0) {
-	  std::cout << "Error reading ME0 mapping" << std::endl;
-	  return -1;
-  }
-  if (geometry=="nov2021" && rectangularStripMapping.read()<0) {
-	  std::cout << "Error reading 20x10 mapping" << std::endl;
-	  return -1;
-  }
-  std::cout << "Here" << std::endl;
-  if (chamberMapping.read()<0) {
-	  std::cout << "Error reading chamber mapping" << std::endl;
-	  return -1;
-  }
   std::cout << "Mapping files ok." << std::endl;
+
   std::map<int, StripMapping*> stripMappings = {
     {0, &trackerStripMapping},
     {1, &trackerStripMapping},
@@ -394,5 +374,6 @@ int main (int argc, char** argv) {
   int unpackerStatus = m_unpacker->unpack(max_events, stripMappings, &chamberMapping);
   delete m_unpacker;
   std::cout << "Output file saved to " << ofile << std::endl;
+
   return unpackerStatus;
 }

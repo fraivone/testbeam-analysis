@@ -4,15 +4,14 @@
     Parse csv file to map of vectors of type T
 */
 
-class CsvReader {
+class DataFrame {
     
     public:
 
 	    std::string fPath;
 
-	    CsvReader(std::string path);
+	    DataFrame(std::vector<std::string> colNames, std::map<std::string, std::vector<std::string>> elements);
 	    
-	    int read();
 	    void print();
 
 		int getNRows() { return fElements[fColumnNames[0]].size(); }
@@ -20,4 +19,6 @@ class CsvReader {
 
 	    std::vector<std::string> fColumnNames;
 	    std::map<std::string, std::vector<std::string>> fElements;
+	    
+		static DataFrame fromCsv(std::string path);
 };
