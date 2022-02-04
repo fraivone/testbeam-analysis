@@ -110,7 +110,7 @@ def main():
                 color='black', weight='normal', loc="left"
             )
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
-            #img.set_clim(.85, 1.)
+            img.set_clim(.85, 1.)
             eff_fig.tight_layout()
             eff_ax.text(.85, 1.01, "GE2/1", transform=eff_ax.transAxes)
             print("Saving result...")
@@ -223,6 +223,7 @@ def main():
             #     0.02,eff_ax.get_position().height
             # ])
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
+            img.set_clim(.85, 1.)
             eff_fig.tight_layout()
             eff_ax.text(.85, 1.01, "ME0", transform=eff_ax.transAxes)
             print("Saving result...")
@@ -278,6 +279,7 @@ def main():
                 color='black', weight='normal', loc="left"
             )
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
+            img.set_clim(.85, 1.)
             eff_fig.tight_layout()
             eff_ax.text(.83, 1.01, "20x10", transform=eff_ax.transAxes)
             print("Saving result...")
