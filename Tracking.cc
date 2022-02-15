@@ -154,6 +154,7 @@ int main (int argc, char** argv) {
     std::array<double, nTrackingChambers> prophits2D_Y_Error;
     // rechit and prophit variables
     std::vector<int> rechitsChamber, prophitsChamber;
+    double trackChi2;
     std::vector<double> rechitsEta;
     std::vector<double> rechitsLocalX;
     std::vector<double> rechitsLocalY;
@@ -194,6 +195,7 @@ int main (int argc, char** argv) {
     trackTree.Branch("prophits2D_X_Error", &prophits2D_X_Error);
     trackTree.Branch("prophits2D_Y_Error", &prophits2D_Y_Error);
     // rechit and prophit branches
+    trackTree.Branch("trackChi2", &trackChi2, "trackChi2/D");
     trackTree.Branch("rechitChamber", &rechitsChamber);
     trackTree.Branch("prophitChamber", &prophitsChamber);
     trackTree.Branch("rechitEta", &rechitsEta);
@@ -335,6 +337,7 @@ int main (int argc, char** argv) {
         track.addRechit(rechit2d);
       }
       track.fit();
+      trackChi2 = track.getChi2X() + track.getChi2Y();
 
       // extrapolate track on large detectors
       for (auto detector:detectorsLarge) {
