@@ -58,8 +58,10 @@ def main():
         if args.verbose: track_tree.show()
 
         print("Reading tree...")
-        # track_chi2 = track_tree["trackChi2"].array(entry_stop=args.events)
-        # print(track_chi2)
+        track_chi2 = track_tree["trackChi2"].array(entry_stop=args.events)
+        chi2_fig, chi2_ax = plt.figure(figsize=(10,9)), plt.axes()
+        chi2_ax.hist(track_chi2, range=(0,20), bins=500)
+        chi2_fig.savefig(args.odir/"chi2.png")
 
         if args.detector=="ge21":
             rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
@@ -225,15 +227,30 @@ def main():
             prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
             prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
 
+            rechit_chamber = rechit_chamber[(track_chi2>0.1)&(track_chi2<2)]
+            prophit_chamber = prophit_chamber[(track_chi2>0.1)&(track_chi2<2)]
+            rechits_x = rechits_x[(track_chi2>0.1)&(track_chi2<2)]
+            rechits_y = rechits_y[(track_chi2>0.1)&(track_chi2<2)]
+            prophits_x = prophits_x[(track_chi2>0.1)&(track_chi2<2)]
+            prophits_y = prophits_y[(track_chi2>0.1)&(track_chi2<2)]
+            track_chi2 = track_chi2[(track_chi2>0.1)&(track_chi2<2)]
+
             me0_chamber = 5
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==me0_chamber]), ak.flatten(prophits_y[prophit_chamber==me0_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==me0_chamber], rechits_y[rechit_chamber==me0_chamber]
+
+            print("Plotting chi2 distributions...")
+            chi2_x_fig, chi2_x_ax = plt.figure(figsize=(10,9)), plt.axes()
+            img = chi2_x_ax.hist2d(track_chi2, prophits_x, range=((0.1,2), (-40,40)), bins=100)
+            chi2_x_fig.colorbar(img[-1], ax=chi2_x_ax, label="Efficiency")
+            chi2_x_fig.tight_layout()
+            chi2_x_fig.savefig(args.odir/"me0_chi2.png")
 
             print("Matching...")
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
             rechits_x, rechits_y = rechits_x[mask_out], rechits_y[mask_out]
             prophits_x, prophits_y = prophits_x[mask_out], prophits_y[mask_out]
-            matches = ak.count(rechits_x, axis=1)>0
+            matches = ak.count(rechits_x, axis=1)>0 # only check whether there is a rechit in the event
             matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
             print("Calculating efficiency map...")
@@ -347,6 +364,14 @@ def main():
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==rectangular_chamber]), ak.flatten(prophits_y[prophit_chamber==rectangular_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==rectangular_chamber], rechits_y[rechit_chamber==rectangular_chamber]
 
+            rechit_chamber = rechit_chamber[(track_chi2>0.1)&(track_chi2<2)]
+            prophit_chamber = prophit_chamber[(track_chi2>0.1)&(track_chi2<2)]
+            rechits_x = rechits_x[(track_chi2>0.1)&(track_chi2<2)]
+            rechits_y = rechits_y[(track_chi2>0.1)&(track_chi2<2)]
+            prophits_x = prophits_x[(track_chi2>0.1)&(track_chi2<2)]
+            prophits_y = prophits_y[(track_chi2>0.1)&(track_chi2<2)]
+            track_chi2 = track_chi2[(track_chi2>0.1)&(track_chi2<2)]
+
             print("Matching...")
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
             rechits_x, rechits_y = rechits_x[mask_out], rechits_y[mask_out]
@@ -404,14 +429,18 @@ def main():
             slices_y = centers_y[::step_y]
             efficiency_slices = efficiency[::step_y]
 
+            mask_x = abs(centers_x)<5
+            centers_x = centers_x[mask_x]
             # calculate min position for each slice:
             slices_fig, slices_ax = plt.figure(), plt.subplot(projection="3d")
             min_positions = list()
             for slice_y, eff_slice in zip(slices_y, efficiency_slices):
+                eff_slice = eff_slice[mask_x]
                 slices_ax.plot(centers_x, slice_y*np.ones(ak.count(centers_x)), eff_slice)
                 eff_min = ak.min(eff_slice)
                 x_min = centers_x[eff_slice==eff_min] # where efficiency minimum is
                 min_positions.append(x_min[0])
+                print(x_min, eff_min)
             slices_ax.set_xlabel("x (mm)")
             slices_ax.set_ylabel("y (mm)")
             slices_ax.set_zlabel("Efficiency")
