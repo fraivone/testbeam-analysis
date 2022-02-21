@@ -79,6 +79,7 @@ configure_file(analysis/scan.py analysis/scan.py COPYONLY)
 configure_file(analysis/track_angles.py analysis/track_angles.py COPYONLY)
 
 configure_file(scripts/angles.sh scripts/angles.sh COPYONLY)
+configure_file(scripts/scan.sh scripts/scan.sh COPYONLY)
 configure_file(scripts/angles.py scripts/angles.py COPYONLY)
 
 #----------------------------------------------------------------------------
