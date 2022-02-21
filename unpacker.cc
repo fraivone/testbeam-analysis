@@ -318,7 +318,7 @@ private:
  
 int main (int argc, char** argv) {
   std::cout << "Running GEM unpacker..." << std::endl;
-  if (argc<4) 
+  if (argc<3) 
   {
     std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--format ferol/sdram] [--verbose] [--check-sync]" << std::endl;
     return 0;
