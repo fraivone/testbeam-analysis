@@ -41,6 +41,9 @@ def ten_gauss(x, *args):
 def nine_gauss(x, *args):
     return n_gauss(x, 9, *args)
 
+def eight_gauss(x, *args):
+    return n_gauss(x, 8, *args)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("ifile", type=pathlib.Path, help="Input file")
@@ -58,9 +61,11 @@ def main():
         if args.verbose: track_tree.show()
 
         print("Reading tree...")
-        track_chi2 = track_tree["trackChi2"].array(entry_stop=args.events)
-        chi2_fig, chi2_ax = plt.figure(figsize=(10,9)), plt.axes()
-        chi2_ax.hist(track_chi2, range=(0,20), bins=500)
+        track_x_chi2 = track_tree["trackChi2X"].array(entry_stop=args.events)
+        track_y_chi2 = track_tree["trackChi2Y"].array(entry_stop=args.events)
+        chi2_fig, chi2_axs = plt.subplots(nrows=2, ncols=1, figsize=(10,9*2))
+        chi2_axs[0].hist(track_x_chi2, range=(0,20), bins=500)
+        chi2_axs[1].hist(track_y_chi2, range=(0,20), bins=500)
         chi2_fig.savefig(args.odir/"chi2.png")
 
         if args.detector=="ge21":
@@ -227,24 +232,29 @@ def main():
             prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
             prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
 
-            rechit_chamber = rechit_chamber[(track_chi2>0.1)&(track_chi2<2)]
-            prophit_chamber = prophit_chamber[(track_chi2>0.1)&(track_chi2<2)]
-            rechits_x = rechits_x[(track_chi2>0.1)&(track_chi2<2)]
-            rechits_y = rechits_y[(track_chi2>0.1)&(track_chi2<2)]
-            prophits_x = prophits_x[(track_chi2>0.1)&(track_chi2<2)]
-            prophits_y = prophits_y[(track_chi2>0.1)&(track_chi2<2)]
-            track_chi2 = track_chi2[(track_chi2>0.1)&(track_chi2<2)]
+            mask_chi2 = (track_x_chi2>0.1)&(track_x_chi2<2)&(track_y_chi2>0.1)&(track_y_chi2<2)
+            rechit_chamber = rechit_chamber[mask_chi2]
+            prophit_chamber = prophit_chamber[mask_chi2]
+            rechits_x = rechits_x[mask_chi2]
+            rechits_y = rechits_y[mask_chi2]
+            prophits_x = prophits_x[mask_chi2]
+            prophits_y = prophits_y[mask_chi2]
+            track_x_chi2 = track_x_chi2[mask_chi2]
+            track_y_chi2 = track_y_chi2[mask_chi2]
 
             me0_chamber = 5
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==me0_chamber]), ak.flatten(prophits_y[prophit_chamber==me0_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==me0_chamber], rechits_y[rechit_chamber==me0_chamber]
 
             print("Plotting chi2 distributions...")
-            chi2_x_fig, chi2_x_ax = plt.figure(figsize=(10,9)), plt.axes()
-            img = chi2_x_ax.hist2d(track_chi2, prophits_x, range=((0.1,2), (-40,40)), bins=100)
-            chi2_x_fig.colorbar(img[-1], ax=chi2_x_ax, label="Efficiency")
-            chi2_x_fig.tight_layout()
-            chi2_x_fig.savefig(args.odir/"me0_chi2.png")
+            chi2_position_fig, chi2_position_axs = plt.subplots(nrows=2, ncols=2, figsize=(10*2,9*2))
+            for i,(coord_prop,prop) in enumerate(zip(["x","y"], [prophits_x, prophits_y])):
+                for j,(coord_chi2,chi2) in enumerate(zip(["x","y"], [track_x_chi2, track_y_chi2])):
+                    chi2_position_axs[i][j].hist2d(chi2, prop, range=((0.1,20), (-40,40)), bins=100)
+                    chi2_position_axs[i][j].set_xlabel("χ$^2_" + coord_chi2 + "$")
+                    chi2_position_axs[i][j].set_ylabel("propagated " + coord_prop + " (mm)")
+            chi2_position_fig.tight_layout()
+            chi2_position_fig.savefig(args.odir/"me0_chi2.png")
 
             print("Matching...")
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
@@ -303,7 +313,7 @@ def main():
             #efficiency = efficiency[map_mask]
 
             # choose only points in (-35,35)x(-30,20)
-            mask_x = (centers_x>-35)&(centers_x<35)
+            mask_x = (centers_x>-35)&(centers_x<28)
             mask_y = (centers_x>-30)&(centers_x<20)
             # slice efficiency map along 10 y points:
             npoints_y = 10
@@ -323,11 +333,11 @@ def main():
 
                 print(f"Fitting efficiency for y={slice_y:1.2f} mm")          
                 params = [
-                    -30, -20, -10, 0, 5, 10, 20, 30, 40, # means
-                    1, 1, 1, 1, 1, 1, 1, 1, 1, # sigma
-                    0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7 # constants 
+                    -30, -20, -15, -10, 0, 5, 15, 20, # means
+                    0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, # sigma
+                    0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7 # constants 
                 ]
-                fit_function = lambda x, *args: 1 - nine_gauss(x, *args)
+                fit_function = lambda x, *args: 1 - eight_gauss(x, *args)
                 try:
                     params, cov = scipy.optimize.curve_fit(
                         fit_function, centers_x[mask_x], eff_slice, p0=params
@@ -336,14 +346,17 @@ def main():
                 x = np.linspace(centers_x[mask_x][0], centers_x[mask_x][-1], 1000)
                 slices_axs[i_slice].plot(x, fit_function(x, *params), color="red")
 
-                m, s, k = params[0:9], params[9:18], params[18:27]
+                m, s, k = params[0:8], params[8:16], params[16:24]
                 print("means", m, "\nsigma", s, "\nconstant", k)
-                for i in range(9):
-                    slices_axs[i_slice].text(m[i]-7, fit_function(m[i], *params)-0.15, f"{s[i]*1e3:1.1f} µm", size=15)
+                for i in range(8):
+                    slices_axs[i_slice].text(
+                        m[i]-1, fit_function(m[i], *params)-0.15,
+                        f"{s[i]*1e3:1.1f} µm", size=15, rotation=60
+                    )
 
-                slices_axs[i_slice].set_xlim(-50, 50)
+                slices_axs[i_slice].set_xlim(-40, 30)
                 slices_axs[i_slice].set_ylim(0.0, 1.1)
-                slices_axs[i_slice].set_xlabel("y (mm)")
+                slices_axs[i_slice].set_xlabel("x (mm)")
                 slices_axs[i_slice].set_ylabel("Efficiency")
                 slices_axs[i_slice].set_title(f"y = {slice_y:1.2f} mm")
 
