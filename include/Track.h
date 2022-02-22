@@ -11,8 +11,6 @@ class Track {
 
         Track();
 
-        std::vector<Rechit> fRechits;
-
         void addRechit(Rechit);
         void clear();
         void fit();
@@ -28,12 +26,16 @@ class Track {
         double getInterceptError() {return fInterceptError;}
         double getSlopeError() {return fSlopeError;}
         double getChi2() {return fChi2;}
+        double getChi2Reduced() {return fChi2/(fRechits.size()-1);}
+        bool isValid() {return fIsValid;}
 
     private:
     
+        std::vector<Rechit> fRechits;
         double fIntercept, fSlope;
         double fInterceptError, fSlopeError;
         double fChi2;
+        bool fIsValid;
 };
 
 #endif

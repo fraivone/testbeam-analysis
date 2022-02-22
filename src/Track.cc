@@ -59,6 +59,7 @@ void Track::fit() {
     fInterceptError = migrad.Error("intercept");
     fSlopeError = migrad.Error("slope");
     fChi2 = min.Fval();
+    fIsValid = migrad.State().IsValid();
 }
 
 double Track::propagate(double z) {

@@ -338,33 +338,38 @@ int main (int argc, char** argv) {
         track.addRechit(rechit2d);
       }
       track.fit();
-      trackChi2X = track.getChi2X();
-      trackChi2Y = track.getChi2Y();
+      if (!track.isValid()) {
+        trackChi2X = -1.;
+        trackChi2Y = -1.;
+      } else {
+        trackChi2X = track.getChi2ReducedX();
+        trackChi2Y = track.getChi2ReducedY();
 
-      // extrapolate track on large detectors
-      for (auto detector:detectorsLarge) {
-        hit = track.propagate(&detector);
-        prophitsChamber.push_back(detector.getChamber());
-        prophitsEta.push_back(hit.getEta());
-        prophitsGlobalX.push_back(hit.getGlobalX());
-        prophitsGlobalY.push_back(hit.getGlobalY());
-        prophitsXError.push_back(hit.getErrX());
-        prophitsYError.push_back(hit.getErrY());
-        prophitsLocalX.push_back(hit.getLocalX());
-        prophitsLocalY.push_back(hit.getLocalY());
-        prophitsLocalR.push_back(hit.getLocalR());
-        prophitsLocalPhi.push_back(hit.getLocalPhi());
+        // extrapolate track on large detectors
+        for (auto detector:detectorsLarge) {
+          hit = track.propagate(&detector);
+          prophitsChamber.push_back(detector.getChamber());
+          prophitsEta.push_back(hit.getEta());
+          prophitsGlobalX.push_back(hit.getGlobalX());
+          prophitsGlobalY.push_back(hit.getGlobalY());
+          prophitsXError.push_back(hit.getErrX());
+          prophitsYError.push_back(hit.getErrY());
+          prophitsLocalX.push_back(hit.getLocalX());
+          prophitsLocalY.push_back(hit.getLocalY());
+          prophitsLocalR.push_back(hit.getLocalR());
+          prophitsLocalPhi.push_back(hit.getLocalPhi());
 
-        if (verbose) {
-          std::cout << "  Chamber " << detector.getChamber() << std::endl;
-          std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
-          std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
-          std::cout << std::endl;
-          std::cout << "    " << "prophit " << "eta=" << hit.getEta() << ", ";
-          std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
-          std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
-          std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
-          std::cout << std::endl;
+          if (verbose) {
+            std::cout << "  Chamber " << detector.getChamber() << std::endl;
+            std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
+            std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
+            std::cout << std::endl;
+            std::cout << "    " << "prophit " << "eta=" << hit.getEta() << ", ";
+            std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
+            std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
+            std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
+            std::cout << std::endl;
+          }
         }
       }
 

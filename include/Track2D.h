@@ -38,6 +38,10 @@ class Track2D {
         double getSlopeErrorY() {return fTrackY.getSlopeError();}
         double getChi2X() {return fTrackX.getChi2();}
         double getChi2Y() {return fTrackY.getChi2();}
+        double getChi2ReducedX() {return fTrackX.getChi2Reduced();}
+        double getChi2ReducedY() {return fTrackY.getChi2Reduced();}
+
+        bool isValid() {return fTrackX.isValid() && fTrackY.isValid();}
 
     private:
     
