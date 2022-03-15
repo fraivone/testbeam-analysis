@@ -320,7 +320,7 @@ int main (int argc, char** argv) {
   std::cout << "Running GEM unpacker..." << std::endl;
   if (argc<3) 
   {
-    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--format ferol/sdram] [--verbose] [--check-sync]" << std::endl;
+    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--geometry geometryname] [--format ferol/sdram] [--verbose] [--check-sync]" << std::endl;
     return 0;
   }
   std::vector<std::string> ifiles;
