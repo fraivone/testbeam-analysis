@@ -64,8 +64,14 @@ def main():
         track_x_chi2 = track_tree["trackChi2X"].array(entry_stop=args.events)
         track_y_chi2 = track_tree["trackChi2Y"].array(entry_stop=args.events)
         chi2_fig, chi2_axs = plt.subplots(nrows=2, ncols=1, figsize=(10,9*2))
-        chi2_axs[0].hist(track_x_chi2, range=(0,20), bins=500)
-        chi2_axs[1].hist(track_y_chi2, range=(0,20), bins=500)
+        chi2_axs[0].hist(track_x_chi2, range=(0.00001,30), bins=500, alpha=0.4)
+        chi2_axs[0].hist(track_x_chi2[track_x_chi2<2], range=(0.00001,30), bins=500, alpha=0.4)
+        chi2_axs[0].set_yscale("log")
+        chi2_axs[0].set_xlabel("χ$^2_x$")
+        chi2_axs[1].hist(track_y_chi2, range=(0.00001,30), bins=500, alpha=0.4)
+        chi2_axs[1].hist(track_y_chi2[track_y_chi2<2], range=(0.00001,30), bins=500, alpha=0.4)
+        chi2_axs[1].set_yscale("log")
+        chi2_axs[1].set_xlabel("χ$^2_y$")
         chi2_fig.savefig(args.odir/"chi2.png")
 
         if args.detector=="ge21":
@@ -77,6 +83,16 @@ def main():
             rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
             prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
             prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
+
+            mask_chi2 = (track_x_chi2>0.1)&(track_x_chi2<2)&(track_y_chi2>0.1)&(track_y_chi2<2)
+            rechit_chamber = rechit_chamber[mask_chi2]
+            prophit_chamber = prophit_chamber[mask_chi2]
+            rechits_x = rechits_x[mask_chi2]
+            rechits_y = rechits_y[mask_chi2]
+            prophits_x = prophits_x[mask_chi2]
+            prophits_y = prophits_y[mask_chi2]
+            track_x_chi2 = track_x_chi2[mask_chi2]
+            track_y_chi2 = track_y_chi2[mask_chi2]
 
             ge21_chamber = 4
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==ge21_chamber]), ak.flatten(prophits_y[prophit_chamber==ge21_chamber])
@@ -118,7 +134,7 @@ def main():
             eff_ax.set_ylabel("y (mm)")
             eff_ax.set_title(
                 r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
-                color='black', weight='normal', loc="left"
+                color="black", weight="normal", loc="left"
             )
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
             img.set_clim(.85, 1.)
@@ -151,13 +167,35 @@ def main():
                 fit_function, centers_y, efficiency_1d, p0=params
             )
             x = np.linspace(centers_y[0], centers_y[-1], 1000)
-            eff_ax.plot(x, fit_function(x, *params), color="red")
+            efficiency_interp = fit_function(x, *params)
+            eff_ax.plot(x, efficiency_interp, color="red")
             eff_ax.set_xlim(-50, 50)
             eff_ax.set_ylim(0.0, 1.1)
             m, s, k = params[0:4], params[4:8], params[8:12]
             print("means", m, "\nsigma", s, "\nconstant", k)
             for i in range(4):
-                eff_ax.text(m[i]-7, 1-2.2*k[i], f"$\sigma$ = {s[i]*1e3:1.1f} µm", size=15)
+                eff_ax.text(
+                    m[i]-1, fit_function(m[i], *params)-0.05,
+                    f"$\sigma$ {s[i]*1e3:1.1f} µm", size=15, rotation=60
+                )
+                #eff_ax.text(m[i]-7, 1-2.2*k[i], f"$\sigma$ = {s[i]*1e3:1.1f} µm", size=15)
+
+            below_95 = efficiency_interp[efficiency_interp<0.95]
+            below_95_x = x[efficiency_interp<0.95]
+            print(below_95)
+            below_95_index = np.argpartition(below_95, 8)[-8:]
+            below_95_positions = np.sort(below_95_x[below_95_index])
+            print(below_95_index)
+            print(below_95_positions)
+            print("Below 95:", below_95_positions)
+            below_95_widths = below_95_positions[1::2]-below_95_positions[::2]
+            print(below_95_widths)
+            eff_ax.plot(x, 0.95+np.zeros(x.size), "-.", color="blue")
+            for i in range(4):
+                eff_ax.text(
+                    m[i]-1, fit_function(m[i], *params)-0.15,
+                    f"{below_95_widths[i]*1e3:1.1f} µm at 95%", size=15, rotation=60
+                )
 
             eff_ax.set_xlabel("Position y (mm)")
             eff_ax.set_ylabel("Efficiency")
@@ -323,7 +361,7 @@ def main():
             #efficiency_slices = efficiency_slices[mask_x]
 
             # plot each slice:
-            slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(10, 9*(npoints_y)))
+            slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(10, 8*(npoints_y)))
             for i_slice,(slice_y,eff_slice) in enumerate(zip(slices_y, efficiency_slices)):
                 # plot and fit with ten gaussians:
                 eff_slice = eff_slice[mask_x]
@@ -343,16 +381,37 @@ def main():
                         fit_function, centers_x[mask_x], eff_slice, p0=params
                     )
                 except RuntimeError: print("Skipping, fit failed...")
-                x = np.linspace(centers_x[mask_x][0], centers_x[mask_x][-1], 1000)
-                slices_axs[i_slice].plot(x, fit_function(x, *params), color="red")
+                x = np.linspace(centers_x[mask_x][0], centers_x[mask_x][-1], 1000000)
+                efficiency_interp = fit_function(x, *params)
+                slices_axs[i_slice].plot(x, efficiency_interp, color="red")
 
                 m, s, k = params[0:8], params[8:16], params[16:24]
                 print("means", m, "\nsigma", s, "\nconstant", k)
+                slices_axs[i_slice].plot(x, 0.95+np.zeros(x.size), "-.", color="blue")
                 for i in range(8):
                     slices_axs[i_slice].text(
                         m[i]-1, fit_function(m[i], *params)-0.15,
-                        f"{s[i]*1e3:1.1f} µm", size=15, rotation=60
+                        f"{s[i]*1e3:1.1f} µm $\sigma$", size=14, rotation=60
                     )
+                    width_95 = 4*s[i]
+                    # slices_axs[i_slice].plot(m[i]-0.5*width_95, fit_function(m[i]-0.5*width_95, *params), "o", markersize=5, color="blue")
+                    # slices_axs[i_slice].plot(m[i]+0.5*width_95, fit_function(m[i]+0.5*width_95, *params), "o", markersize=5, color="blue")
+                    slices_axs[i_slice].text(
+                        m[i]-1, fit_function(m[i], *params)-0.25,
+                        f"{width_95*1e3:1.1f} µm at 95%",
+                        size=14, rotation=60, color="blue"
+                    )
+
+                # below_95 = efficiency_interp[efficiency_interp<0.95]
+                # below_95_x = x[efficiency_interp<0.95]
+                # print(below_95)
+                # below_95_index = np.argpartition(below_95, 16)[-16:]
+                # below_95_positions = np.sort(below_95_x[below_95_index])
+                # print(below_95_index)
+                # print("Below 95:", below_95_positions)
+                # print("Efficiency:", fit_function(below_95_positions, *params))
+                # below_95_widths = below_95_positions[1::2]-below_95_positions[::2]
+                # print(below_95_widths)
 
                 slices_axs[i_slice].set_xlim(-40, 30)
                 slices_axs[i_slice].set_ylim(0.0, 1.1)
@@ -360,6 +419,7 @@ def main():
                 slices_axs[i_slice].set_ylabel("Efficiency")
                 slices_axs[i_slice].set_title(f"y = {slice_y:1.2f} mm")
 
+            slices_fig.tight_layout()
             slices_fig.savefig(os.path.join(args.odir, "me0_slices.png"))
 
 
@@ -373,17 +433,29 @@ def main():
             prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
             prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
 
+            mask_chi2 = (track_x_chi2>0.1)&(track_x_chi2<2)&(track_y_chi2>0.1)&(track_y_chi2<2)
+            rechit_chamber = rechit_chamber[mask_chi2]
+            prophit_chamber = prophit_chamber[mask_chi2]
+            rechits_x = rechits_x[mask_chi2]
+            rechits_y = rechits_y[mask_chi2]
+            prophits_x = prophits_x[mask_chi2]
+            prophits_y = prophits_y[mask_chi2]
+            track_x_chi2 = track_x_chi2[mask_chi2]
+            track_y_chi2 = track_y_chi2[mask_chi2]
+
             rectangular_chamber = 6
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==rectangular_chamber]), ak.flatten(prophits_y[prophit_chamber==rectangular_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==rectangular_chamber], rechits_y[rechit_chamber==rectangular_chamber]
 
-            rechit_chamber = rechit_chamber[(track_chi2>0.1)&(track_chi2<2)]
-            prophit_chamber = prophit_chamber[(track_chi2>0.1)&(track_chi2<2)]
-            rechits_x = rechits_x[(track_chi2>0.1)&(track_chi2<2)]
-            rechits_y = rechits_y[(track_chi2>0.1)&(track_chi2<2)]
-            prophits_x = prophits_x[(track_chi2>0.1)&(track_chi2<2)]
-            prophits_y = prophits_y[(track_chi2>0.1)&(track_chi2<2)]
-            track_chi2 = track_chi2[(track_chi2>0.1)&(track_chi2<2)]
+            print("Plotting chi2 distributions...")
+            chi2_position_fig, chi2_position_axs = plt.subplots(nrows=2, ncols=2, figsize=(10*2,9*2))
+            for i,(coord_prop,prop) in enumerate(zip(["x","y"], [prophits_x, prophits_y])):
+                for j,(coord_chi2,chi2) in enumerate(zip(["x","y"], [track_x_chi2, track_y_chi2])):
+                    chi2_position_axs[i][j].hist2d(chi2, prop, range=((0.1,20), (-40,40)), bins=100)
+                    chi2_position_axs[i][j].set_xlabel("χ$^2_" + coord_chi2 + "$")
+                    chi2_position_axs[i][j].set_ylabel("propagated " + coord_prop + " (mm)")
+            chi2_position_fig.tight_layout()
+            chi2_position_fig.savefig(args.odir/"me0_chi2.png")
 
             print("Matching...")
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)

@@ -18,60 +18,11 @@ plt.style.use(hep.style.ROOT)
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(8)
 
-def linear_function(x, *p):
-    q, m = p
-    return q + m*x
-
-def gauss(x, *p):
-    A, mu, sigma = p
-    return A*scipy.stats.norm.pdf(x, loc=mu, scale=sigma)
-    #return A*np.exp(-(x-mu)**2/(2.*sigma**2))
-
-def gauss2(x, *p):
-    A1, mu1, sigma1, A2, mu2, sigma2 = p
-    # to be checked
-    return A1*scipy.stats.norm.pdf(x, loc=mu1, scale=sigma1) + A2*scipy.stats.norm.pdf(x, loc=mu2, scale=sigma2)
-    #return gauss(x, A1, mu1, sigma1) + gauss(x, A2, mu2, sigma2)
-
-def analyse_residuals(residuals, range, nbins, ax, legend, xlabel, pulls=False):
-    if pulls: ax, ax_pulls = ax
-    points, bins = np.histogram(residuals, bins=nbins, range=range)
-    bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
-    
-    # gaussian fit
-    coeff = [len(residuals), ak.mean(residuals), ak.std(residuals)]
-    #coeff += [len(residuals)*0.1, ak.mean(residuals), 10*ak.std(residuals)]
-    #print(gauss2, "bins:", bins, "\npoints:", points, coeff)
-    try:
-        coeff, var_matrix = curve_fit(gauss, bins, points, p0=coeff, method="lm")
-        perr = np.sqrt(np.diag(var_matrix))
-    except RuntimeError:
-        print("Fit failed, using RMS instead...")
-    space_resolution = 1e3*coeff[2]
-    err_space_resolution = 1e3*perr[2]
-    
-    # plot data and fit
-    ax.hist(
-        residuals, bins=nbins, range=range,
-        histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k",
-        label = legend
-    )
-    #ax.scatter(bins, points, marker="o", label=label)
-    xvalues = np.linspace(bins[0], bins[-1], 1000)
-    ax.plot(xvalues, gauss(xvalues, *coeff), color="red")
-    ax.set_xlabel(xlabel)
-    binning_um = 1e3*(bins[1]-bins[0])
-    ax.set_ylabel(f"Events/{binning_um:1.0f} µm")
-    if pulls: ax_pulls.plot(bins, (points-gauss(bins, *coeff))/np.sqrt(points), "ok")
-    #residual_cls_axs[idirection][tested_chamber].legend()
-
-    return space_resolution, err_space_resolution
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("ifile", type=pathlib.Path, help="Input file")
+    parser.add_argument("ifile", type=pathlib.Path, help="Input track file")
     parser.add_argument('odir', type=pathlib.Path, help="Output directory")
-    parser.add_argument("-n", "--events", type=int, default=-1, help="Number of events to analyse")
+    parser.add_argument("-n", "--events", type=int, default=-1, help="Number of events to analyze")
     parser.add_argument("-v", "--verbose", action="store_true", help="Activate logging")
     args = parser.parse_args()
     
@@ -108,7 +59,7 @@ def main():
         # Preparing figures:
         print("Starting plotting...")
         directions = ["x", "y"]
-        residual_fig, residual_axs = plt.subplots(nrows=4, ncols=4, figsize=(50,25), gridspec_kw={'height_ratios': [2, 1, 2, 1]})
+        residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
@@ -116,7 +67,6 @@ def main():
         prophits_fig, prophits_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residuals2d_xx_fig, residuals2d_xx_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residuals2d_xy_fig, residuals2d_xy_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
-        cluster_size_fig, cluster_size_axs = plt.subplots(nrows=1, ncols=4, figsize=(50,9))
 
         angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
         for tested_chamber in range(4):
@@ -133,12 +83,12 @@ def main():
             residuals = [prophits[0]-rechits[0], prophits[1]-rechits[1]]
             cluster_sizes = [cluster_size_x[:,tested_chamber], cluster_size_y[:,tested_chamber]]
 
-            space_resolutions, err_space_resolutions = dict(), dict()
-            cluster_size_cuts = list(range(2,11))
+            space_resolutions = dict()
+            cluster_size_cuts = list(range(1,10))
 
             for idirection in range(2):
                 direction = directions[idirection]
-                space_resolutions[direction], err_space_resolutions[direction] = list(), list()
+                space_resolutions[direction] = list()
                 cluster_size = cluster_sizes[idirection]
 
                 # plot propagated hits
@@ -154,32 +104,28 @@ def main():
                 prophits_axs[idirection][tested_chamber].set_ylabel(f"Events/{int(binsize)} µm")
 
                 # plot residuals for all cluster sizes:
-                space_resolution, err_space_resolution = analyse_residuals(
+                space_resolution = analyse_residuals(
                     residuals[idirection],
-                    (-0.7, 0.7), 45,
-                    [
-                        residual_axs[idirection*2][tested_chamber],
-                        residual_axs[idirection*2+1][tested_chamber]
-                    ],
-                    "", f"{directions[idirection]} residual (mm)",
-                    pulls=True
+                    (-0.45, 0.45), 200,
+                    residual_axs[idirection][tested_chamber],
+                    None, f"{directions[idirection]} residual (mm)"
                 )
-                residual_axs[idirection*2][tested_chamber].set_title(
+                residual_axs[idirection][tested_chamber].set_title(
                     f"BARI-0{tested_chamber+1} {direction} - {space_resolution:1.0f} µm"
                 )
                 residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
                 
                 # plot residuals for cluster sizes separately:
                 for cls in tqdm(cluster_size_cuts):
-                    res, err_res = analyse_residuals(
-                        residuals[idirection][cluster_size==cls],
-                        (-0.45, 0.45), 30,
-                        residual_cls_axs[idirection][tested_chamber],
-                        f"cluster size {cls}",
-                        f"{directions[idirection]} residual (mm)"
+                    space_resolutions[direction].append(
+                        analyse_residuals(
+                            residuals[idirection][cluster_size==cls],
+                            (-0.45, 0.45), 200,
+                            residual_cls_axs[idirection][tested_chamber],
+                            f"cluster size {cls}",
+                            f"{directions[idirection]} residual (mm)"
+                        )
                     )
-                    space_resolutions[direction].append(res)
-                    err_space_resolutions[direction].append(err_res)
 
                     # residual_cls_axs[idirection][tested_chamber].text(
                     #     2, (1-0.1*parity)*1e6,
@@ -219,7 +165,7 @@ def main():
                 angles[tested_chamber][idirection] = (-1)**idirection*theta
                 err_angles[tested_chamber][idirection] = err_theta
 
-                x_fit = np.linspace(-30, 30, 20)
+                x_fit = np.linspace(-30, 30, 100)
                 rotation_axs[idirection][tested_chamber].plot(x_fit, linear_function(x_fit, *coeff), color="red")
                 rotation_axs[idirection][tested_chamber].text(
                     0.7, 0.8,
@@ -249,13 +195,6 @@ def main():
                 residuals2d_xx_axs[idirection][tested_chamber].set_ylabel(f"Residual {direction} (mm)")
 
                 spres_axs[tested_chamber].plot(cluster_size_cuts, space_resolutions[direction], marker="o", label=direction)
-                spres_axs[tested_chamber].fill_between(
-                    cluster_size_cuts,
-                    np.array(space_resolutions[direction]) - np.array(err_space_resolutions[direction]),
-                    np.array(space_resolutions[direction]) + np.array(err_space_resolutions[direction]),
-                    alpha=0.2
-                )
-                #spres_axs[tested_chamber].plot(cluster_size_cuts, err_space_resolutions[direction], marker="o", label=direction)
 
             # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
             # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
@@ -280,24 +219,6 @@ def main():
             spres_axs[tested_chamber].set_ylabel(f"Residual sigma (µm)")
             spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             spres_axs[tested_chamber].legend()
-
-            h, binsx, binsy, img = cluster_size_axs[tested_chamber].hist2d(
-                cluster_sizes[0], cluster_sizes[1],
-                bins=10,
-                range=((0.5, 10.5), (0.5, 10.5))
-            )
-            binsx_center = 0.5*(binsx[1:]+binsx[:-1])
-            binsy_center = 0.5*(binsy[1:]+binsy[:-1])
-            for ix, binx in enumerate(binsx_center):
-                for iy, biny in enumerate(binsy_center):
-                    cluster_size_axs[tested_chamber].text(
-                        binx, biny, int(h[ix][iy]),
-                        ha="center", va="center", size=11, weight="bold"
-                    )
-            cluster_size_fig.colorbar(img, ax=cluster_size_axs[tested_chamber], label="Events")
-            cluster_size_axs[tested_chamber].set_xlabel("Cluster size x")
-            cluster_size_axs[tested_chamber].set_ylabel("Cluster size y")
-            cluster_size_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
 
         print("Saving plots...")
         
@@ -324,9 +245,6 @@ def main():
 
         residuals2d_xy_fig.tight_layout()
         residuals2d_xy_fig.savefig(os.path.join(args.odir, "residuals2d_xy.png"))
-
-        cluster_size_fig.tight_layout()
-        cluster_size_fig.savefig(os.path.join(args.odir, "cluster_size.png"))
 
         # combine x and y angle corrections, then save:
         correction_angles = {
