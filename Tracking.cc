@@ -135,11 +135,14 @@ int main (int argc, char** argv) {
 
     const int nTrackingChambers = 4;
     // track variables
-    std::array<double, nTrackingChambers> trackFitChi2;
+    std::array<double, nTrackingChambers> tracks_X_chi2;
+    std::array<double, nTrackingChambers> tracks_Y_chi2;
     std::array<double, nTrackingChambers> tracks_X_slope;
     std::array<double, nTrackingChambers> tracks_Y_slope;
     std::array<double, nTrackingChambers> tracks_X_intercept;
     std::array<double, nTrackingChambers> tracks_Y_intercept;
+    std::array<double, nTrackingChambers> tracks_X_covariance;
+    std::array<double, nTrackingChambers> tracks_Y_covariance;
     // rechit 2D variables
     std::array<int, nTrackingChambers> rechits2D_Chamber;
     std::array<double, nTrackingChambers> rechits2D_X;
@@ -155,6 +158,7 @@ int main (int argc, char** argv) {
     // rechit and prophit variables
     std::vector<int> rechitsChamber, prophitsChamber;
     double trackChi2X, trackChi2Y;
+    double trackCovarianceX, trackCovarianceY;
     std::vector<double> rechitsEta;
     std::vector<double> rechitsLocalX;
     std::vector<double> rechitsLocalY;
@@ -163,8 +167,8 @@ int main (int argc, char** argv) {
     std::vector<double> prophitsEta;
     std::vector<double> prophitsGlobalX;
     std::vector<double> prophitsGlobalY;
-    std::vector<double> prophitsXError;
-    std::vector<double> prophitsYError;
+    std::vector<double> prophitsErrorX;
+    std::vector<double> prophitsErrorY;
     std::vector<double> prophitsLocalX;
     std::vector<double> prophitsLocalY;
     std::vector<double> prophitsLocalR;
@@ -177,11 +181,14 @@ int main (int argc, char** argv) {
     double propErrorX, propErrorY;
 
     // track branches
-    trackTree.Branch("trackFitChi2", &trackFitChi2);
+    trackTree.Branch("tracks_X_chi2", &tracks_X_chi2);
+    trackTree.Branch("tracks_Y_chi2", &tracks_Y_chi2);
     trackTree.Branch("tracks_X_slope", &tracks_X_slope);
     trackTree.Branch("tracks_Y_slope", &tracks_Y_slope);
     trackTree.Branch("tracks_X_intercept", &tracks_X_intercept);
     trackTree.Branch("tracks_Y_intercept", &tracks_Y_intercept);
+    trackTree.Branch("tracks_X_covariance", &tracks_X_covariance);
+    trackTree.Branch("tracks_Y_covariance", &tracks_Y_covariance);
     // rechit 2D branches
     trackTree.Branch("rechits2D_Chamber", &rechits2D_Chamber);
     trackTree.Branch("rechits2D_X", &rechits2D_X);
@@ -197,6 +204,8 @@ int main (int argc, char** argv) {
     // rechit and prophit branches
     trackTree.Branch("trackChi2X", &trackChi2X, "trackChi2X/D");
     trackTree.Branch("trackChi2Y", &trackChi2Y, "trackChi2Y/D");
+    trackTree.Branch("trackCovarianceX", &trackCovarianceX, "trackCovarianceX/D");
+    trackTree.Branch("trackCovarianceY", &trackCovarianceY, "trackCovarianceY/D");
     trackTree.Branch("rechitChamber", &rechitsChamber);
     trackTree.Branch("prophitChamber", &prophitsChamber);
     trackTree.Branch("rechitEta", &rechitsEta);
@@ -207,8 +216,8 @@ int main (int argc, char** argv) {
     trackTree.Branch("prophitEta", &prophitsEta);
     trackTree.Branch("prophitGlobalX", &prophitsGlobalX);
     trackTree.Branch("prophitGlobalY", &prophitsGlobalY);
-    trackTree.Branch("prophitXError", &prophitsXError);
-    trackTree.Branch("prophitYError", &prophitsYError);
+    trackTree.Branch("prophitErrorX", &prophitsErrorX);
+    trackTree.Branch("prophitErrorY", &prophitsErrorY);
     trackTree.Branch("prophitLocalX", &prophitsLocalX);
     trackTree.Branch("prophitLocalY", &prophitsLocalY);
     trackTree.Branch("prophitLocalR", &prophitsLocalR);
@@ -248,8 +257,8 @@ int main (int argc, char** argv) {
       prophitsEta.clear();
       prophitsGlobalX.clear();
       prophitsGlobalY.clear();
-      prophitsXError.clear();
-      prophitsYError.clear();
+      prophitsErrorX.clear();
+      prophitsErrorY.clear();
       prophitsLocalX.clear();
       prophitsLocalY.clear();
       prophitsLocalR.clear();
@@ -301,11 +310,14 @@ int main (int argc, char** argv) {
         }
         // fit and save track:
         track.fit();
-        trackFitChi2[testedChamber] = track.getChi2X() + track.getChi2Y();
+        tracks_X_chi2[testedChamber] = track.getChi2X();
+        tracks_Y_chi2[testedChamber] = track.getChi2Y();
         tracks_X_slope[testedChamber] = track.getSlopeX();
         tracks_Y_slope[testedChamber] = track.getSlopeY();
         tracks_X_intercept[testedChamber] = track.getInterceptX();
         tracks_Y_intercept[testedChamber] = track.getInterceptY();
+        tracks_X_covariance[testedChamber] = track.getCovarianceX();
+        tracks_Y_covariance[testedChamber] = track.getCovarianceY();
 
         // propagate to chamber under test:
         prophits2D_X[testedChamber] = track.propagateX(detectorTrackers[testedChamber].getPositionZ());
@@ -344,6 +356,8 @@ int main (int argc, char** argv) {
       } else {
         trackChi2X = track.getChi2ReducedX();
         trackChi2Y = track.getChi2ReducedY();
+        trackCovarianceX = track.getCovarianceX();
+        trackCovarianceY = track.getCovarianceY();
 
         // extrapolate track on large detectors
         for (auto detector:detectorsLarge) {
@@ -352,8 +366,8 @@ int main (int argc, char** argv) {
           prophitsEta.push_back(hit.getEta());
           prophitsGlobalX.push_back(hit.getGlobalX());
           prophitsGlobalY.push_back(hit.getGlobalY());
-          prophitsXError.push_back(hit.getErrX());
-          prophitsYError.push_back(hit.getErrY());
+          prophitsErrorX.push_back(hit.getErrX());
+          prophitsErrorY.push_back(hit.getErrY());
           prophitsLocalX.push_back(hit.getLocalX());
           prophitsLocalY.push_back(hit.getLocalY());
           prophitsLocalR.push_back(hit.getLocalR());

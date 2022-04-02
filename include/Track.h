@@ -25,6 +25,7 @@ class Track {
         double getSlope() {return fSlope;}
         double getInterceptError() {return fInterceptError;}
         double getSlopeError() {return fSlopeError;}
+        double getCovariance() {return fCovariance;}
         double getChi2() {return fChi2;}
         double getChi2Reduced() {return fChi2/(fRechits.size()-1);}
         bool isValid() {return fIsValid;}
@@ -33,7 +34,7 @@ class Track {
     
         std::vector<Rechit> fRechits;
         double fIntercept, fSlope;
-        double fInterceptError, fSlopeError;
+        double fInterceptError, fSlopeError, fCovariance;
         double fChi2;
         bool fIsValid;
 };
