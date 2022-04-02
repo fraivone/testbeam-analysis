@@ -94,9 +94,10 @@ int main (int argc, char** argv) {
     detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
-    detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
-    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°
-    detectorsLarge[2].setPosition(0., 0., 0., 0);
+    detectorsLarge[0].setPosition(0., 0., -214.63800944827358, 0.015515778476258502); // todo: x and y alignment
+    //detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502); // todo: x and y alignment
+    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°, todo: x and y alignment
+    detectorsLarge[2].setPosition(0., 0., 0., 0); // todo: x and y alignment
     
     // rechit variables
     int nrechits;
@@ -135,35 +136,39 @@ int main (int argc, char** argv) {
 
     const int nTrackingChambers = 4;
     // track variables
-    std::array<double, nTrackingChambers> tracks_X_chi2;
-    std::array<double, nTrackingChambers> tracks_Y_chi2;
-    std::array<double, nTrackingChambers> tracks_X_slope;
-    std::array<double, nTrackingChambers> tracks_Y_slope;
-    std::array<double, nTrackingChambers> tracks_X_intercept;
-    std::array<double, nTrackingChambers> tracks_Y_intercept;
-    std::array<double, nTrackingChambers> tracks_X_covariance;
-    std::array<double, nTrackingChambers> tracks_Y_covariance;
+    std::vector<double> tracks_X_chi2;
+    std::vector<double> tracks_Y_chi2;
+    std::vector<double> tracks_X_slope;
+    std::vector<double> tracks_Y_slope;
+    std::vector<double> tracks_X_intercept;
+    std::vector<double> tracks_Y_intercept;
+    std::vector<double> tracks_X_covariance;
+    std::vector<double> tracks_Y_covariance;
     // rechit 2D variables
-    std::array<int, nTrackingChambers> rechits2D_Chamber;
-    std::array<double, nTrackingChambers> rechits2D_X;
-    std::array<double, nTrackingChambers> rechits2D_Y;
-    std::array<double, nTrackingChambers> rechits2D_X_Error;
-    std::array<double, nTrackingChambers> rechits2D_Y_Error;
-    std::array<double, nTrackingChambers> rechits2D_X_ClusterSize;
-    std::array<double, nTrackingChambers> rechits2D_Y_ClusterSize;
-    std::array<double, nTrackingChambers> prophits2D_X;
-    std::array<double, nTrackingChambers> prophits2D_Y;
-    std::array<double, nTrackingChambers> prophits2D_X_Error;
-    std::array<double, nTrackingChambers> prophits2D_Y_Error;
+    std::vector<int> rechits2D_Chamber;
+    std::vector<double> rechits2D_X;
+    std::vector<double> rechits2D_Y;
+    std::vector<double> rechits2D_X_Error;
+    std::vector<double> rechits2D_Y_Error;
+    std::vector<double> rechits2D_X_ClusterSize;
+    std::vector<double> rechits2D_Y_ClusterSize;
+    std::vector<double> prophits2D_X;
+    std::vector<double> prophits2D_Y;
+    std::vector<double> prophits2D_X_Error;
+    std::vector<double> prophits2D_Y_Error;
     // rechit and prophit variables
     std::vector<int> rechitsChamber, prophitsChamber;
     double trackChi2X, trackChi2Y;
     double trackCovarianceX, trackCovarianceY;
+    double trackSlopeX, trackSlopeY;
+    double trackInterceptX, trackInterceptY;
     std::vector<double> rechitsEta;
     std::vector<double> rechitsLocalX;
     std::vector<double> rechitsLocalY;
     std::vector<double> rechitsLocalR;
     std::vector<double> rechitsLocalPhi;
+    std::vector<double> rechitsGlobalX;
+    std::vector<double> rechitsGlobalY;
     std::vector<double> prophitsEta;
     std::vector<double> prophitsGlobalX;
     std::vector<double> prophitsGlobalY;
@@ -189,6 +194,7 @@ int main (int argc, char** argv) {
     trackTree.Branch("tracks_Y_intercept", &tracks_Y_intercept);
     trackTree.Branch("tracks_X_covariance", &tracks_X_covariance);
     trackTree.Branch("tracks_Y_covariance", &tracks_Y_covariance);
+
     // rechit 2D branches
     trackTree.Branch("rechits2D_Chamber", &rechits2D_Chamber);
     trackTree.Branch("rechits2D_X", &rechits2D_X);
@@ -201,11 +207,17 @@ int main (int argc, char** argv) {
     trackTree.Branch("prophits2D_Y", &prophits2D_Y);
     trackTree.Branch("prophits2D_X_Error", &prophits2D_X_Error);
     trackTree.Branch("prophits2D_Y_Error", &prophits2D_Y_Error);
+
     // rechit and prophit branches
     trackTree.Branch("trackChi2X", &trackChi2X, "trackChi2X/D");
     trackTree.Branch("trackChi2Y", &trackChi2Y, "trackChi2Y/D");
     trackTree.Branch("trackCovarianceX", &trackCovarianceX, "trackCovarianceX/D");
     trackTree.Branch("trackCovarianceY", &trackCovarianceY, "trackCovarianceY/D");
+    trackTree.Branch("trackSlopeX", &trackSlopeX, "trackSlopeX/D");
+    trackTree.Branch("trackSlopeY", &trackSlopeY, "trackSlopeY/D");
+    trackTree.Branch("trackInterceptX", &trackInterceptX, "trackInterceptX/D");
+    trackTree.Branch("trackInterceptY", &trackInterceptY, "trackInterceptY/D");
+
     trackTree.Branch("rechitChamber", &rechitsChamber);
     trackTree.Branch("prophitChamber", &prophitsChamber);
     trackTree.Branch("rechitEta", &rechitsEta);
@@ -213,6 +225,8 @@ int main (int argc, char** argv) {
     trackTree.Branch("rechitLocalY", &rechitsLocalY);
     trackTree.Branch("rechitLocalR", &rechitsLocalR);
     trackTree.Branch("rechitLocalPhi", &rechitsLocalPhi);
+    trackTree.Branch("rechitGlobalX", &rechitsGlobalX);
+    trackTree.Branch("rechitGlobalY", &rechitsGlobalY);
     trackTree.Branch("prophitEta", &prophitsEta);
     trackTree.Branch("prophitGlobalX", &prophitsGlobalX);
     trackTree.Branch("prophitGlobalY", &prophitsGlobalY);
@@ -230,7 +244,8 @@ int main (int argc, char** argv) {
 
     int nentries = rechitTree->GetEntries();
     int nentriesGolden = 0, nentriesNice = 0;
-    std::array<double, nTrackingChambers> eventsPerTrackingChamber;
+    // support array to exclude events with more than one hit per tracker:
+    std::array<double, nTrackingChambers> hitsPerTrackingChamber;
 
     std::cout << nentries << " total events" <<  std::endl;
     if (max_events>0) nentries = max_events;
@@ -242,11 +257,33 @@ int main (int argc, char** argv) {
       if (verbose) std::cout << "Event " << nevt << "/" << nentries << std::endl;
       else bar.update();
 
-      // reset support variables:
+      /* reset support variables */
       for (int i=0; i<nTrackingChambers; i++) {
-        rechits2D_Chamber[i] = -1;
-        eventsPerTrackingChamber[i] = 0;
+        hitsPerTrackingChamber[i] = 0;
       }
+      /* reset branch variables */
+      // tracker branches:
+      tracks_X_chi2.clear();
+      tracks_Y_chi2.clear();
+      tracks_X_slope.clear();
+      tracks_Y_slope.clear();
+      tracks_X_intercept.clear();
+      tracks_Y_intercept.clear();
+      tracks_X_covariance.clear();
+      tracks_Y_covariance.clear();
+      rechits2D_Chamber.clear();
+      rechits2D_X.clear();
+      rechits2D_Y.clear();
+      rechits2D_X_Error.clear();
+      rechits2D_Y_Error.clear();
+      rechits2D_X_ClusterSize.clear();
+      rechits2D_Y_ClusterSize.clear();
+      prophits2D_X.clear();
+      prophits2D_Y.clear();
+      prophits2D_X_Error.clear();
+      prophits2D_Y_Error.clear();
+
+      // large chamber branches:
       rechitsChamber.clear();
       prophitsChamber.clear();
       rechitsEta.clear();
@@ -270,8 +307,8 @@ int main (int argc, char** argv) {
       bool isNiceEvent = true;
       for (int irechit=0; isNiceEvent && irechit<nrechits2d; irechit++) {
         chamber = vecRechit2DChamber->at(irechit);
-        if (eventsPerTrackingChamber[chamber]>0) isNiceEvent = false;
-        else eventsPerTrackingChamber[chamber]++;
+        if (hitsPerTrackingChamber[chamber]>0) isNiceEvent = false;
+        else hitsPerTrackingChamber[chamber]++;
         if (verbose) std::cout << "  Rechit in chamber " << chamber << std::endl;
       }
 
@@ -299,41 +336,41 @@ int main (int argc, char** argv) {
             track.addRechit(rechit2d);
           } else {
             // add rechit to tree
-            rechits2D_Chamber[testedChamber] = chamber;
-            rechits2D_X[testedChamber] = rechit2d.getGlobalX();
-            rechits2D_Y[testedChamber] = rechit2d.getGlobalY();
-            rechits2D_X_ClusterSize[testedChamber] = rechit2d.getClusterSizeX();
-            rechits2D_Y_ClusterSize[testedChamber] = rechit2d.getClusterSizeY();
-            rechits2D_X_Error[testedChamber] = rechit2d.getErrorX();
-            rechits2D_Y_Error[testedChamber] = rechit2d.getErrorY();
+            rechits2D_Chamber.push_back(chamber);
+            rechits2D_X.push_back(rechit2d.getGlobalX());
+            rechits2D_Y.push_back(rechit2d.getGlobalY());
+            rechits2D_X_ClusterSize.push_back(rechit2d.getClusterSizeX());
+            rechits2D_Y_ClusterSize.push_back(rechit2d.getClusterSizeY());
+            rechits2D_X_Error.push_back(rechit2d.getErrorX());
+            rechits2D_Y_Error.push_back(rechit2d.getErrorY());
           }
         }
         // fit and save track:
         track.fit();
-        tracks_X_chi2[testedChamber] = track.getChi2X();
-        tracks_Y_chi2[testedChamber] = track.getChi2Y();
-        tracks_X_slope[testedChamber] = track.getSlopeX();
-        tracks_Y_slope[testedChamber] = track.getSlopeY();
-        tracks_X_intercept[testedChamber] = track.getInterceptX();
-        tracks_Y_intercept[testedChamber] = track.getInterceptY();
-        tracks_X_covariance[testedChamber] = track.getCovarianceX();
-        tracks_Y_covariance[testedChamber] = track.getCovarianceY();
+        tracks_X_chi2.push_back(track.getChi2X());
+        tracks_Y_chi2.push_back(track.getChi2Y());
+        tracks_X_slope.push_back(track.getSlopeX());
+        tracks_Y_slope.push_back(track.getSlopeY());
+        tracks_X_intercept.push_back(track.getInterceptX());
+        tracks_Y_intercept.push_back(track.getInterceptY());
+        tracks_X_covariance.push_back(track.getCovarianceX());
+        tracks_Y_covariance.push_back(track.getCovarianceY());
 
         // propagate to chamber under test:
-        prophits2D_X[testedChamber] = track.propagateX(detectorTrackers[testedChamber].getPositionZ());
-        prophits2D_Y[testedChamber] = track.propagateY(detectorTrackers[testedChamber].getPositionZ());
-        prophits2D_X_Error[testedChamber] = track.propagationErrorX(detectorTrackers[testedChamber].getPositionZ());
-        prophits2D_Y_Error[testedChamber] = track.propagationErrorY(detectorTrackers[testedChamber].getPositionZ());
+        prophits2D_X.push_back(track.propagateX(detectorTrackers[testedChamber].getPositionZ()));
+        prophits2D_Y.push_back(track.propagateY(detectorTrackers[testedChamber].getPositionZ()));
+        prophits2D_X_Error.push_back(track.propagationErrorX(detectorTrackers[testedChamber].getPositionZ()));
+        prophits2D_Y_Error.push_back(track.propagationErrorY(detectorTrackers[testedChamber].getPositionZ()));
 
         if (verbose) {
           std::cout << "  Chamber " << testedChamber << std::endl;
           std::cout << "    " << "track slope (" << track.getSlopeX() << "," << track.getSlopeY() << ")";
           std::cout << " " << "intercept (" << track.getInterceptX() << "," << track.getInterceptY() << ")";
           std::cout << std::endl;
-          std::cout << "    " << "rechit (" << rechits2D_X[testedChamber];
-          std::cout << ", " << rechits2D_Y[testedChamber] << ")";
-          std::cout << "  " << "prophit (" << prophits2D_X[testedChamber];
-          std::cout << ", " << prophits2D_Y[testedChamber] << ")";
+          std::cout << "    " << "rechit (" << rechits2D_X.back();
+          std::cout << ", " << rechits2D_Y.back() << ")";
+          std::cout << "  " << "prophit (" << prophits2D_X.back();
+          std::cout << ", " << prophits2D_Y.back() << ")";
           std::cout << std::endl;
         }
       }
@@ -358,6 +395,10 @@ int main (int argc, char** argv) {
         trackChi2Y = track.getChi2ReducedY();
         trackCovarianceX = track.getCovarianceX();
         trackCovarianceY = track.getCovarianceY();
+        trackSlopeX = track.getSlopeX();
+        trackSlopeX = track.getSlopeX();
+        trackInterceptY = track.getInterceptY();
+        trackInterceptY = track.getInterceptY();
 
         // extrapolate track on large detectors
         for (auto detector:detectorsLarge) {
@@ -405,6 +446,8 @@ int main (int argc, char** argv) {
         rechitsLocalY.push_back(hit.getLocalY());
         rechitsLocalR.push_back(hit.getLocalR());
         rechitsLocalPhi.push_back(hit.getLocalPhi());
+        rechitsGlobalX.push_back(hit.getGlobalX());
+        rechitsGlobalY.push_back(hit.getGlobalY());
         if (verbose) {
           std::cout << "    " << "rechit  " << "eta=" << vecRechitEta->at(iRechit) << ", ";
           std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
