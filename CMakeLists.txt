@@ -75,6 +75,7 @@ configure_file(analysis/residuals.py analysis/residuals.py COPYONLY)
 configure_file(analysis/profiles.py analysis/profiles.py COPYONLY)
 configure_file(analysis/ge21.py analysis/ge21.py COPYONLY)
 configure_file(analysis/horns.py analysis/horns.py COPYONLY)
+configure_file(analysis/occupancy.py analysis/occupancy.py COPYONLY)
 configure_file(analysis/scan.py analysis/scan.py COPYONLY)
 configure_file(analysis/track_angles.py analysis/track_angles.py COPYONLY)
 
