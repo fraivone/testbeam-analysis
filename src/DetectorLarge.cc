@@ -50,7 +50,7 @@ double DetectorLarge::getStripPitchSqrt12(int eta) {
 Rechit DetectorLarge::createRechit(Cluster cluster) {
     Rechit rechit(
         fChamber,
-        -0.5*getWidth(cluster.getEta()) + getStripPitch(cluster.getEta())*cluster.getCenter(),
+        -0.5*getWidth(cluster.getEta()) + getStripPitch(cluster.getEta()) * cluster.getCenter(),
         cluster.getSize() * getStripPitchSqrt12(cluster.getEta()),
         cluster.getSize()
     );

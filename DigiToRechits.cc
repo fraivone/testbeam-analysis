@@ -65,6 +65,7 @@ int main (int argc, char** argv) {
   std::vector<int> *vecDigiEta = new std::vector<int>(); // even for x, odd for y
   std::vector<int> *vecDigiDirection = new std::vector<int>(); // 0 for x, 1 for y
   std::vector<int> *vecDigiStrip = new std::vector<int>(); // 0 to 357
+  std::vector<int> *vecRawChannel = new std::vector<int>();
 
   // cluster variables
   int nclusters;
@@ -108,7 +109,7 @@ int main (int argc, char** argv) {
   digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
   digiTree->SetBranchAddress("digiEta", &vecDigiEta);
   digiTree->SetBranchAddress("digiStrip", &vecDigiStrip);
-  //digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
+  digiTree->SetBranchAddress("CH", &vecRawChannel);
   //digiTree->SetBranchAddress("digiDirection", &vecDigiDirection);
 
   // cluster branches
@@ -121,6 +122,8 @@ int main (int argc, char** argv) {
 
   // rechit branches
   rechitTree.Branch("nrechits", &nrechits, "nrechits/I");
+  rechitTree.Branch("rawChannel", vecRawChannel);
+  rechitTree.Branch("digiStrip", vecDigiStrip);
   rechitTree.Branch("rechitChamber", &vecRechitChamber);
   rechitTree.Branch("rechitEta", &vecRechitEta);
   rechitTree.Branch("rechitX", &vecRechitX);

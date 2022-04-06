@@ -94,8 +94,9 @@ int main (int argc, char** argv) {
     detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
-    detectorsLarge[0].setPosition(0., 0., -214.63800944827358, 0.015515778476258502); // todo: x and y alignment
-    //detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502); // todo: x and y alignment
+    //detectorsLarge[0].setPosition(0., 0., 0., 0.); // todo: x and y alignment
+    detectorsLarge[0].setPosition(0., 0., 0., 0.);//-0.7509290623979403);
+    //detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
     detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°, todo: x and y alignment
     detectorsLarge[2].setPosition(0., 0., 0., 0); // todo: x and y alignment
     
@@ -107,6 +108,9 @@ int main (int argc, char** argv) {
     std::vector<double> *vecRechitY = new std::vector<double>();
     std::vector<double> *vecRechitError = new std::vector<double>();
     std::vector<double> *vecRechitClusterSize = new std::vector<double>();
+    std::vector<int> *vecClusterCenter = new std::vector<int>();
+    std::vector<int> *vecDigiStrip = new std::vector<int>();
+    std::vector<int> *vecRawChannel = new std::vector<int>();
     // rechit2D variables
     int nrechits2d;
     std::vector<int> *vecRechit2DChamber = new std::vector<int>();
@@ -123,7 +127,10 @@ int main (int argc, char** argv) {
     rechitTree->SetBranchAddress("rechitX", &vecRechitX);
     rechitTree->SetBranchAddress("rechitY", &vecRechitY);
     rechitTree->SetBranchAddress("rechitError", &vecRechitError);
+    rechitTree->SetBranchAddress("clusterCenter", &vecClusterCenter);
     rechitTree->SetBranchAddress("rechitClusterSize", &vecRechitClusterSize);
+    rechitTree->SetBranchAddress("digiStrip", &vecDigiStrip);
+    rechitTree->SetBranchAddress("rawChannel", &vecRawChannel);
     // rechit2D branches
     rechitTree->SetBranchAddress("nrechits2d", &nrechits2d);
     rechitTree->SetBranchAddress("rechit2DChamber", &vecRechit2DChamber);
@@ -169,6 +176,7 @@ int main (int argc, char** argv) {
     std::vector<double> rechitsLocalPhi;
     std::vector<double> rechitsGlobalX;
     std::vector<double> rechitsGlobalY;
+    std::vector<double> rechitsClusterSize;
     std::vector<double> prophitsEta;
     std::vector<double> prophitsGlobalX;
     std::vector<double> prophitsGlobalY;
@@ -217,16 +225,19 @@ int main (int argc, char** argv) {
     trackTree.Branch("trackSlopeY", &trackSlopeY, "trackSlopeY/D");
     trackTree.Branch("trackInterceptX", &trackInterceptX, "trackInterceptX/D");
     trackTree.Branch("trackInterceptY", &trackInterceptY, "trackInterceptY/D");
-
     trackTree.Branch("rechitChamber", &rechitsChamber);
     trackTree.Branch("prophitChamber", &prophitsChamber);
     trackTree.Branch("rechitEta", &rechitsEta);
+    trackTree.Branch("rechitClusterCenter", vecClusterCenter);
+    trackTree.Branch("rechitDigiStrip", vecDigiStrip);
+    trackTree.Branch("rechitRawChannel", vecRawChannel);
     trackTree.Branch("rechitLocalX", &rechitsLocalX);
     trackTree.Branch("rechitLocalY", &rechitsLocalY);
     trackTree.Branch("rechitLocalR", &rechitsLocalR);
     trackTree.Branch("rechitLocalPhi", &rechitsLocalPhi);
     trackTree.Branch("rechitGlobalX", &rechitsGlobalX);
     trackTree.Branch("rechitGlobalY", &rechitsGlobalY);
+    trackTree.Branch("rechitClusterSize", &rechitsClusterSize);
     trackTree.Branch("prophitEta", &prophitsEta);
     trackTree.Branch("prophitGlobalX", &prophitsGlobalX);
     trackTree.Branch("prophitGlobalY", &prophitsGlobalY);
@@ -289,8 +300,11 @@ int main (int argc, char** argv) {
       rechitsEta.clear();
       rechitsLocalX.clear();
       rechitsLocalY.clear();
+      rechitsGlobalX.clear();
+      rechitsGlobalY.clear();
       rechitsLocalR.clear();
       rechitsLocalPhi.clear();
+      rechitsClusterSize.clear();
       prophitsEta.clear();
       prophitsGlobalX.clear();
       prophitsGlobalY.clear();
@@ -396,8 +410,8 @@ int main (int argc, char** argv) {
         trackCovarianceX = track.getCovarianceX();
         trackCovarianceY = track.getCovarianceY();
         trackSlopeX = track.getSlopeX();
-        trackSlopeX = track.getSlopeX();
-        trackInterceptY = track.getInterceptY();
+        trackSlopeY = track.getSlopeY();
+        trackInterceptX = track.getInterceptX();
         trackInterceptY = track.getInterceptY();
 
         // extrapolate track on large detectors
@@ -448,9 +462,10 @@ int main (int argc, char** argv) {
         rechitsLocalPhi.push_back(hit.getLocalPhi());
         rechitsGlobalX.push_back(hit.getGlobalX());
         rechitsGlobalY.push_back(hit.getGlobalY());
+        rechitsClusterSize.push_back(vecRechitClusterSize->at(iRechit));
         if (verbose) {
           std::cout << "    " << "rechit  " << "eta=" << vecRechitEta->at(iRechit) << ", ";
-          std::cout << "global carthesian (" << hit.getGlobalX() << "," << hit.getGlobalY() << "), ";
+          std::cout << "global carthesian (" << rechitsGlobalX.back() << "," << rechitsGlobalY.back() << "), ";
           std::cout << "local carthesian (" << hit.getLocalX() << "," << hit.getLocalY() << "), ";
           std::cout << "local polar R=" << hit.getLocalR() << ", phi=" << hit.getLocalPhi();
           std::cout << std::endl;

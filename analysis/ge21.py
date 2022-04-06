@@ -68,50 +68,127 @@ def main():
         if args.verbose: track_tree.show()
 
         print("Reading tree...")
-        # rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
-        # prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
-        # rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
-        # prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
-        # rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
-        # rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
-        # prophits_x = ak.flatten(track_tree["prophitLocalX"].array(entry_stop=args.events))
-        # prophits_y = ak.flatten(track_tree["prophitLocalY"].array(entry_stop=args.events))
-        # residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
-
+        # 1D branches:
         track_x_chi2 = track_tree["trackChi2X"].array(entry_stop=args.events)
         track_y_chi2 = track_tree["trackChi2Y"].array(entry_stop=args.events)
         rechit_chamber = track_tree["rechitChamber"].array(entry_stop=args.events)
         prophit_chamber = track_tree["prophitChamber"].array(entry_stop=args.events)
         rechits_eta = track_tree["rechitEta"].array(entry_stop=args.events)
-        prophits_eta = ak.flatten(track_tree["prophitEta"].array(entry_stop=args.events))
-        rechits_x = track_tree["rechitLocalX"].array(entry_stop=args.events)
-        rechits_y = track_tree["rechitLocalY"].array(entry_stop=args.events)
-        prophits_x = track_tree["prophitLocalX"].array(entry_stop=args.events)
-        prophits_y = track_tree["prophitLocalY"].array(entry_stop=args.events)
+        prophits_eta = track_tree["prophitEta"].array(entry_stop=args.events)
+        rechits_x = track_tree["rechitGlobalX"].array(entry_stop=args.events)
+        rechits_y = track_tree["rechitGlobalY"].array(entry_stop=args.events)
+        rechits_cluster_center = track_tree["rechitClusterCenter"].array(entry_stop=args.events)
+        rechits_cluster_size = track_tree["rechitClusterSize"].array(entry_stop=args.events)
+        digi_strip = track_tree["rechitDigiStrip"].array(entry_stop=args.events)
+        raw_channel = track_tree["rechitRawChannel"].array(entry_stop=args.events)
+        track_intercept_x = track_tree["trackInterceptX"].array(entry_stop=args.events)
+        track_intercept_y = track_tree["trackInterceptY"].array(entry_stop=args.events)
+        prophits_x = -track_tree["prophitGlobalY"].array(entry_stop=args.events)
+        prophits_y = track_tree["prophitGlobalX"].array(entry_stop=args.events)
+
+        # 2D branches:
+        rechits2d_chamber = track_tree["rechits2D_Chamber"].array(entry_stop=args.events)
+        rechits2d_x = track_tree["rechits2D_X"].array(entry_stop=args.events)
+        rechits2d_y = track_tree["rechits2D_Y"].array(entry_stop=args.events)
+        prophits2d_x = track_tree["prophits2D_X"].array(entry_stop=args.events)
+        prophits2d_y = track_tree["prophits2D_Y"].array(entry_stop=args.events)
+
+        tracker_test_chamber = 3
+        has_chamber2 = ak.count(rechits2d_chamber==tracker_test_chamber, axis=1)>0
+        #print("Has chamber 2", has_chamber2)
+        #print("Rechits masked with 'has chamber 2'", ak.mask(rechits2d_x, rechits2d_chamber==tracker_test_chamber))
+        masked_chamber2 = ak.mask(rechits2d_x, rechits2d_chamber==tracker_test_chamber)
+        print("masked_chamber2", masked_chamber2)
+        with_chamber2 = ak.count(masked_chamber2!=None, axis=1)>0
+        print("with_chamber2", with_chamber2)
+        rechits2d_x_chamber2 = ak.mask(masked_chamber2[rechits2d_chamber==tracker_test_chamber], with_chamber2)
+        rechits2d_x_chamber2 = ak.fill_none(rechits2d_x_chamber2, [0])
+        rechits2d_x_chamber2 = ak.flatten(rechits2d_x_chamber2)
+        print("rechits2d_x_chamber2", rechits2d_x_chamber2)
+
+        # print("Rechits 2D x")
+        # for i in range(20):
+        #     print("    chamber: ", rechits2d_chamber[i])
+        #     print("    x:       ", rechits2d_x[i])
 
         mask_chi2 = (track_x_chi2>0.1)&(track_x_chi2<2)&(track_y_chi2>0.1)&(track_y_chi2<2)
         rechit_chamber = rechit_chamber[mask_chi2]
         prophit_chamber = prophit_chamber[mask_chi2]
         rechits_eta = rechits_eta[mask_chi2]
+        rechits_cluster_center = rechits_cluster_center[mask_chi2]
+        rechits_cluster_size = rechits_cluster_size[mask_chi2]
+        digi_strip = digi_strip[mask_chi2]
+        raw_channel = raw_channel[mask_chi2]
         prophits_eta = prophits_eta[mask_chi2]
         rechits_x = rechits_x[mask_chi2]
         rechits_y = rechits_y[mask_chi2]
         prophits_x = prophits_x[mask_chi2]
         prophits_y = prophits_y[mask_chi2]
+        track_intercept_x = track_intercept_x[mask_chi2]
+        track_intercept_y = track_intercept_y[mask_chi2]
         track_x_chi2 = track_x_chi2[mask_chi2]
         track_y_chi2 = track_y_chi2[mask_chi2]
+        rechits2d_x_chamber2 = rechits2d_x_chamber2[mask_chi2]
 
         ge21_chamber = 4
         prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==ge21_chamber]), ak.flatten(prophits_y[prophit_chamber==ge21_chamber])
+        prophits_eta = ak.flatten(prophits_eta[prophit_chamber==ge21_chamber])
         rechits_x, rechits_y = rechits_x[rechit_chamber==ge21_chamber], rechits_y[rechit_chamber==ge21_chamber]
+        rechits_eta = rechits_eta[rechit_chamber==ge21_chamber]
+        rechits_cluster_size = rechits_cluster_size[rechit_chamber==ge21_chamber]
+        digi_strip = digi_strip[rechit_chamber==ge21_chamber]
+        raw_channel = raw_channel[rechit_chamber==ge21_chamber]
+        rechits_cluster_center = rechits_cluster_center[rechit_chamber==ge21_chamber]
         residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
-        print(prophits_x)
-        print(prophits_y)
-        print(rechits_x)
-        print(rechits_y)
-        print(rechit_chamber)
-        print(residuals_x)
-        print(residuals_y)
+        
+        print("track intercept x:", track_intercept_x)
+        print("rechit chamber:", rechit_chamber)
+        print("cluster center:", rechits_cluster_center)
+        print("cluster size:", rechits_cluster_size)
+        print("digi strip:", digi_strip)
+        print("raw channel:", raw_channel)
+        print("prophits global x:", prophits_x)
+        print("prophits global y:", prophits_y)
+        print("rechits global x:", rechits_x)
+        print("rechits global y:", rechits_y)
+        print("residuals x:", residuals_x)
+        print("residuals y:", residuals_y)
+        print("Average x residual:", ak.mean(residuals_x))
+        print("Average y residual:", ak.mean(residuals_y))
+
+        occupancy_fig, occupancy_axs = plt.subplots(nrows=1, ncols=2, figsize=(20,9))
+        #single_hit_mask = ak.count(rechits_x, axis=1)==1
+        occupancy_axs[0].hist2d(
+            ak.flatten(rechits_x),
+            ak.flatten(rechits_y),
+            bins=40
+        )
+        occupancy_axs[0].set_xlabel("Rechit x")
+        occupancy_axs[0].set_ylabel("Rechit y")
+        occupancy_axs[1].hist2d(
+            prophits_x,
+            prophits_y,
+            bins=40
+        )
+        occupancy_axs[1].set_xlabel("Prophit x")
+        occupancy_axs[1].set_ylabel("Prophit y")
+        #for ax in occupancy_axs: ax.legend()
+        occupancy_fig.tight_layout()
+        occupancy_fig.savefig(args.odir/"occupancy.png")
+
+        occupancy_cls_fig, occupancy_cls_ax = plt.subplots(figsize=(12,9))
+        #single_hit_mask = ak.count(rechits_x, axis=1)==1
+        h, x, y, img = occupancy_cls_ax.hist2d(
+            ak.flatten(rechits_x),
+            ak.flatten(rechits_cluster_size),
+            range=((-100, 100), (0, 10)),
+            bins=40
+        )
+        occupancy_cls_ax.set_xlabel("Rechit x")
+        occupancy_cls_ax.set_ylabel("Cluster size")
+        occupancy_cls_fig.colorbar(img, ax=occupancy_cls_ax)
+        occupancy_cls_fig.tight_layout()
+        occupancy_cls_fig.savefig(args.odir/"occupancy_cluster_size.png")
 
         eta_fig, eta_axs = plt.subplots(nrows=1, ncols=3, figsize=(36,9))
         #prophits_eta = 4 - np.floor(prophits_y/107.7)
@@ -141,13 +218,62 @@ def main():
             bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
         )
         eta_fig.tight_layout()
-        eta_fig.savefig(os.path.join(args.odir, "eta.png"))
+        eta_fig.savefig(args.odir/"eta.png")
 
+        hits_fig, hits_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
         residual_fig, residual_axs = plt.subplots(nrows=2, ncols=1, figsize=(12,18))
         residual_rechit_fig, residual_rechit_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
         residual_prophit_fig, residual_prophit_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
         rechit_prophit_fig, rechit_prophit_axs = plt.subplots(nrows=2, ncols=2, figsize=(24,18))
-        ranges = [(-300, 0), (-400, 0)]
+        ranges = [(-10, 10), (-100, 100)]
+
+        cluster_prophit_fig, cluster_prophit_axs = plt.subplots(nrows=1, ncols=6, figsize=(12*6,9))
+        single_hit_mask = ak.count(rechits_cluster_center, axis=1)==1
+        cluster_prophit_axs[0].hist2d(
+            track_intercept_x[single_hit_mask],
+            ak.flatten(rechits_cluster_center[single_hit_mask]),
+            bins=100
+        )
+        cluster_prophit_axs[0].set_xlabel(f"Propagated x (mm)")
+        cluster_prophit_axs[0].set_ylabel(f"Cluster center")
+        cluster_prophit_axs[1].hist2d(
+            track_intercept_x[single_hit_mask],
+            ak.mean(digi_strip[single_hit_mask], axis=1),
+            bins=100
+        )
+        cluster_prophit_axs[1].set_xlabel(f"Propagated x (mm)")
+        cluster_prophit_axs[1].set_ylabel(f"Average strip")
+        cluster_prophit_axs[2].hist2d(
+            track_intercept_x[single_hit_mask],
+            ak.mean(raw_channel[single_hit_mask], axis=1),
+            bins=100
+        )
+        cluster_prophit_axs[2].set_xlabel(f"Propagated x (mm)")
+        cluster_prophit_axs[2].set_ylabel(f"Average VFAT channel")
+        cluster_prophit_axs[3].hist2d(
+            track_intercept_y[single_hit_mask],
+            ak.mean(raw_channel[single_hit_mask], axis=1),
+            bins=100
+        )
+        cluster_prophit_axs[3].set_xlabel(f"Propagated y (mm)")
+        cluster_prophit_axs[3].set_ylabel(f"Average VFAT channel")
+        print(track_intercept_x[single_hit_mask], ak.count(track_intercept_x[single_hit_mask]))
+        print(rechits2d_x_chamber2[single_hit_mask], ak.count(rechits2d_x_chamber2[single_hit_mask], axis=0))
+        cluster_prophit_axs[4].hist2d(
+            track_intercept_x[single_hit_mask],
+            rechits2d_x_chamber2[single_hit_mask],
+            bins=100
+        )
+        cluster_prophit_axs[4].set_xlabel(f"Propagated x (mm)")
+        cluster_prophit_axs[4].set_ylabel(f"Rechit in chamber {tracker_test_chamber} (mm)")
+        cluster_prophit_axs[5].hist2d(
+            track_intercept_y[single_hit_mask],
+            ak.mean(digi_strip[single_hit_mask], axis=1),
+            bins=100
+        )
+        cluster_prophit_axs[5].set_xlabel(f"Propagated y (mm)")
+        cluster_prophit_axs[5].set_ylabel(f"Average strip")
+
         for idirection,residuals in enumerate([residuals_x, residuals_y]):
             direction = ["x", "y"][idirection]
             idirection_other = int(not idirection)
@@ -162,9 +288,25 @@ def main():
             # residuals = residuals[np.arange(ak.num(residuals, axis=0)),min_residual_mask]
             # rechits = rechits[np.arange(ak.num(rechits, axis=0)),min_residual_mask]
 
+            for eta in range(5):
+                hits_axs[idirection][0].hist(
+                    ak.flatten(rechits[rechits_eta==eta]),
+                    bins=100, range=(-50, 300),
+                    histtype="step", label=f"$\eta = {eta}$"
+                )
+                hits_axs[idirection][1].hist(
+                    prophits[prophits_eta==eta],
+                    bins=100, range=(-50, 300),
+                    histtype="step", label=f"$\eta = {eta}$"
+                )
+                hits_axs[idirection][0].set_xlabel(f"Rechits {direction} (mm)")
+                hits_axs[idirection][1].set_xlabel(f"Prophits {direction} (mm)")
+            for ax in hits_axs[idirection]: ax.legend()
+            
             single_hit_mask = ak.count(rechits, axis=1)==1
             prophits = prophits[single_hit_mask]
             rechits = ak.flatten(rechits[single_hit_mask])
+            rechits_eta_direction = ak.flatten(rechits_eta[single_hit_mask])
             residuals = ak.flatten(residuals[single_hit_mask])
 
             residual_axs[idirection].hist(
@@ -182,10 +324,14 @@ def main():
             residual_prophit_axs[idirection][0].set_xlabel(f"Propagated {direction} (mm)")
             residual_prophit_axs[idirection][0].set_ylabel(f"Residual {direction} (mm)")
 
-            rechit_prophit_axs[idirection][0].hist2d(prophits, rechits, bins=100)
+            rechit_prophit_axs[idirection][0].hist2d(
+                prophits[rechits_eta_direction==2],
+                rechits[rechits_eta_direction==2],
+                bins=100
+            )
             rechit_prophit_axs[idirection][0].set_xlabel(f"Propagated {direction} (mm)")
             rechit_prophit_axs[idirection][0].set_ylabel(f"Rechit {direction} (mm)")
-            
+
             # plot x(y) residuals vs y(x) coordinate
             residual_rechit_axs[idirection][1].hist2d(
                 ak.flatten([rechits_x,rechits_y][idirection_other][single_hit_mask]), residuals, bins=100
@@ -197,165 +343,29 @@ def main():
             )
             residual_prophit_axs[idirection][1].set_xlabel(f"Propagated {direction_other} (mm)")
             residual_prophit_axs[idirection][1].set_ylabel(f"Residual {direction} (mm)")
+
             rechit_prophit_axs[idirection][1].hist2d(
                 [prophits_x,prophits_y][idirection_other][single_hit_mask], rechits, bins=100
             )
             rechit_prophit_axs[idirection][1].set_xlabel(f"Propagated {direction_other} (mm)")
             rechit_prophit_axs[idirection][1].set_ylabel(f"Rechit {direction} (mm)")
 
+        hits_fig.tight_layout()
+        hits_fig.savefig(args.odir/"hits.png")
+
         residual_fig.tight_layout()
-        residual_fig.savefig(os.path.join(args.odir, "residuals.png"))
+        residual_fig.savefig(args.odir/"residuals.png")
 
         residual_rechit_fig.tight_layout()
-        residual_rechit_fig.savefig(os.path.join(args.odir, "residuals_rechits.png"))
+        residual_rechit_fig.savefig(args.odir/"residuals_rechits.png")
 
         rechit_prophit_fig.tight_layout()
-        rechit_prophit_fig.savefig(os.path.join(args.odir, "prophits_rechits.png"))
+        rechit_prophit_fig.savefig(args.odir/"prophits_rechits.png")
+
+        cluster_prophit_fig.tight_layout()
+        cluster_prophit_fig.savefig(args.odir/"prophits_cluster.png")
 
         residual_prophit_fig.tight_layout()
-        residual_prophit_fig.savefig(os.path.join(args.odir, "residuals_prophits.png"))
-
-        # print("Starting plotting...")
-        # directions = ["x", "y"]
-        # residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
-        # residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
-        # spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
-        # rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
-
-        # for tested_chamber in range(4):
-        #     print(f"Processing chamber {tested_chamber}...")
-        #     rechits = [rechits_x[tested_chamber], rechits_y[tested_chamber]]
-        #     prophits = [prophits_x[tested_chamber], prophits_y[tested_chamber]]
-        #     residuals = [residuals_x[tested_chamber], residuals_y[tested_chamber]]
-        #     cluster_sizes = [cluster_size_x[tested_chamber], cluster_size_y[tested_chamber]]
-
-        #     space_resolutions = dict()
-        #     properr_fig, properr_ax = plt.figure(figsize=(10,7)), plt.axes()
-        #     residuals2d_fig, residuals2d_ax = plt.subplots(nrows=2, ncols=1, figsize=(10,12))
-        #     residual_cls_axs[0][tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
-        #     cluster_size_cuts = list(range(1,10))
-        #     for idirection in range(2):
-        #         direction = directions[idirection]
-        #         space_resolutions[direction] = list()
-        #         cluster_size = cluster_sizes[idirection]
-
-        #         # plot residuals for all cluster sizes:
-        #         space_resolution = analyse_residuals(
-        #             residuals[idirection],
-        #             (-0.45, 0.45), 200,
-        #             residual_axs[idirection][tested_chamber],
-        #             None, f"{directions[idirection]} residual (mm)"
-        #         )
-        #         residual_axs[idirection][tested_chamber].set_title(
-        #             f"BARI-0{tested_chamber+1} {direction} - {space_resolution:1.0f} µm"
-        #         )
-                
-        #         # plot residuals for cluster sizes separately:
-        #         for cls in tqdm(cluster_size_cuts):
-        #             space_resolutions[direction].append(
-        #                 analyse_residuals(
-        #                     residuals[idirection][cluster_size==cls],
-        #                     (-1.2, 1.2), 100,
-        #                     residual_cls_axs[idirection][tested_chamber],
-        #                     f"cluster size {cls}",
-        #                     f"{directions[idirection]} residual (mm)"
-        #                 )
-        #             )
-
-        #             # residual_cls_axs[idirection][tested_chamber].text(
-        #             #     2, (1-0.1*parity)*1e6,
-        #             #     f"Space resolution {space_resolution:1.0f} µm",
-        #             #     horizontalalignment="right",
-        #             #     fontsize=20
-        #             # )
-                
-        #         # plot residuals vs propagated position:
-        #         prophit_bins = np.linspace(-30, 30, 15)
-        #         prophit_means, residual_means = list(), list()
-        #         prophit_errors, residual_errors = list(), list()
-        #         for i,b in enumerate(prophit_bins[:-1]):
-        #             b_min, b_max = b, prophit_bins[i+1]
-        #             selection = (prophits[idirection]>b_min) & (prophits[idirection]<b_max)
-        #             prophit_means.append(prophits[idirection][selection].mean())
-        #             residual_means.append(residuals[int(not idirection)][selection].mean())
-        #             prophit_errors.append(prophits[idirection][selection].std())
-        #             residual_errors.append(residuals[int(not idirection)][selection].std()/np.sqrt(residuals[idirection][selection].size))
-                   
-        #         rotation_axs[idirection][tested_chamber].errorbar(
-        #             prophit_means, residual_means, xerr=prophit_errors, yerr=residual_errors, fmt="o"
-        #         )
-        #         # fit with line and plot result:
-        #         coeff = [
-        #             0.5*(residual_means[0]+residual_means[-1]),
-        #             (residual_means[-1]+residual_means[0])/(prophit_means[-1]+prophit_means[0])
-        #         ]
-        #         coeff, var_matrix = curve_fit(linear_function, prophit_means, residual_means, p0=coeff, method="lm")
-        #         q, m = coeff
-        #         #theta = np.arccos(1-abs(m))*1e3
-        #         theta = np.arcsin(m)*1e3
-        #         x_fit = np.linspace(-30, 30, 100)
-        #         rotation_axs[idirection][tested_chamber].plot(x_fit, linear_function(x_fit, *coeff), color="red")
-        #         rotation_axs[idirection][tested_chamber].text(
-        #             0.75, 0.8,
-        #             f"m = {m:1.1e}\nq = {q*1e3:1.2f} µm\nϑ = {theta:1.1f} mrad",
-        #             transform=rotation_axs[idirection][tested_chamber].transAxes,
-        #             bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
-        #         )
-
-        #         #rotation_axs[idirection][tested_chamber].set_xlim(-30, 30)
-        #         #rotation_axs[idirection][tested_chamber].set_ylim(-0.06, 0.06)
-        #         rotation_axs[idirection][tested_chamber].set_xlabel("Propagated hit (mm)")
-        #         rotation_axs[idirection][tested_chamber].set_ylabel("Residual (mm)")
-        #         rotation_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
-
-        #         # plot 2D distribution of residuals vs propagated position:
-        #         residuals2d_ax[idirection].hist2d(prophits[idirection], residuals[idirection], bins=100, range=[[-40, 40],[-1, 1]])
-        #         residuals2d_ax[idirection].set_title(f"BARI-0{tested_chamber+1} direction {direction}")
-        #         residuals2d_ax[idirection].set_xlabel("Propagated position (mm)")
-        #         residuals2d_ax[idirection].set_ylabel("Residual (mm)")
-
-        #         spres_axs[tested_chamber].plot(cluster_size_cuts, space_resolutions[direction], marker="o", label=direction)
-                
-
-        #     # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
-        #     # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
-        #     # #plt.contourf(bins_x, bins_y, efficiency)
-        #     # plt.imshow(efficiency, extent=eff_range[0]+eff_range[1], origin="lower")
-        #     # plt.xlabel("x (mm)")
-        #     # plt.ylabel("y (mm)")
-        #     # plt.colorbar(label="Efficiency")
-        #     # plt.tight_layout()
-        #     # plt.text(eff_range[0][-1]-.5, eff_range[1][-1]+2, "GEM-10x10-380XY-BARI-04", horizontalalignment="right")
-
-        #     # plot propagation errors
-        #     properr_ax.hist(prophits_x_error[tested_chamber], bins=70, label="x", alpha=0.3)
-        #     properr_ax.hist(prophits_y_error[tested_chamber], bins=70, label="y", alpha=0.3)
-        #     properr_ax.set_xlim(0, 0.7)
-        #     properr_ax.set_xlabel("Extrapolation uncertainty (mm)")
-        #     properr_ax.set_title(f"BARI-0{tested_chamber+1}")
-        #     properr_ax.legend()
-        #     properr_fig.savefig(os.path.join(args.odir, f"extrapolation_error_{tested_chamber}.png"))
-
-        #     spres_axs[tested_chamber].set_xlabel("Cluster size")            
-        #     spres_axs[tested_chamber].set_ylabel(f"Space resolution (µm)")
-        #     spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
-        #     spres_axs[tested_chamber].legend()
-
-        #     residuals2d_fig.tight_layout()
-        #     residuals2d_fig.savefig(os.path.join(args.odir, f"residuals2d_{tested_chamber}.png"))
-
-        # print("Saving plots...")
-        
-        # spres_fig.tight_layout()
-        # spres_fig.savefig(os.path.join(args.odir, "space_resolution.png"))
-
-        # residual_fig.tight_layout()
-        # residual_fig.savefig(os.path.join(args.odir, "residuals.png"))
-
-        # residual_cls_fig.tight_layout()
-        # residual_cls_fig.savefig(os.path.join(args.odir, "residuals_cls.png"))
-
-        # rotation_fig.tight_layout()
-        # rotation_fig.savefig(os.path.join(args.odir, "rotation.png"))
+        residual_prophit_fig.savefig(args.odir/"residuals_prophits.png")
 
 if __name__=='__main__': main()
