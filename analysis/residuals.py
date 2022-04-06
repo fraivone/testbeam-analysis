@@ -40,6 +40,7 @@ def analyse_residuals(residuals, range, nbins, ax, legend, xlabel, pulls=False):
     
     # gaussian fit
     coeff = [len(residuals), ak.mean(residuals), ak.std(residuals)]
+    perr = [0]*3
     #coeff += [len(residuals)*0.1, ak.mean(residuals), 10*ak.std(residuals)]
     #print(gauss2, "bins:", bins, "\npoints:", points, coeff)
     try:
@@ -91,6 +92,9 @@ def main():
 
         #rechits_x_error = track_tree["rechits2D_X_Error"].array(entry_stop=args.events)
         #rechits_y_error = track_tree["rechits2D_Y_Error"].array(entry_stop=args.events)
+        track_chi2 = track_tree["trackFitChi2"].array(entry_stop=args.events)
+        tracks_x_covariance = track_tree["tracks_X_covariance"].array(entry_stop=args.events)
+        tracks_y_covariance = track_tree["tracks_Y_covariance"].array(entry_stop=args.events)
         cluster_size_x = track_tree["rechits2D_X_ClusterSize"].array(entry_stop=args.events)
         cluster_size_y = track_tree["rechits2D_Y_ClusterSize"].array(entry_stop=args.events)
         prophits_x_error = track_tree["prophits2D_X_Error"].array(entry_stop=args.events)
@@ -104,6 +108,8 @@ def main():
         residuals_x, residuals_y = residuals_x[mask_4hit], residuals_y[mask_4hit]
         cluster_size_x, cluster_size_y = cluster_size_x[mask_4hit], cluster_size_y[mask_4hit]
         prophits_x_error, prophits_y_error = prophits_x_error[mask_4hit], prophits_y_error[mask_4hit]
+        tracks_x_covariance, tracks_y_covariance = tracks_x_covariance[mask_4hit], tracks_y_covariance[mask_4hit]
+        track_chi2 = track_chi2[mask_4hit]
         
         # Preparing figures:
         print("Starting plotting...")
@@ -117,6 +123,8 @@ def main():
         residuals2d_xx_fig, residuals2d_xx_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residuals2d_xy_fig, residuals2d_xy_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         cluster_size_fig, cluster_size_axs = plt.subplots(nrows=1, ncols=4, figsize=(50,9))
+        chi2_fig, chi2_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
+        properr_position_fig, properr_position_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
 
         angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
         for tested_chamber in range(4):
@@ -132,6 +140,9 @@ def main():
             prophits = [prophits_x[:,tested_chamber], prophits_y[:,tested_chamber]]
             residuals = [prophits[0]-rechits[0], prophits[1]-rechits[1]]
             cluster_sizes = [cluster_size_x[:,tested_chamber], cluster_size_y[:,tested_chamber]]
+            tracks_covariance = [tracks_x_covariance[:,tested_chamber], tracks_y_covariance[:,tested_chamber]]
+            properrs = prophits_x_error[:,tested_chamber], prophits_y_error[:,tested_chamber]
+            chi2 = track_chi2[:,tested_chamber]
 
             space_resolutions, err_space_resolutions = dict(), dict()
             cluster_size_cuts = list(range(2,11))
@@ -168,6 +179,15 @@ def main():
                     f"BARI-0{tested_chamber+1} {direction} - {space_resolution:1.0f} µm"
                 )
                 residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
+
+                chi2_axs[idirection][tested_chamber].hist2d(
+                    chi2, 1e3*tracks_covariance[idirection],
+                    range=((0,1), (0,0.1)), bins=50
+                )
+                #chi2_axs[idirection][tested_chamber].hist(1e3*tracks_covariance[idirection], bins=50)
+                #chi2_axs[idirection][tested_chamber].set_yscale("log")
+                chi2_axs[idirection][tested_chamber].set_xlabel(f"χ$^2_{direction}$")
+                chi2_axs[idirection][tested_chamber].set_ylabel("Fit parameters covariance (µm)")
                 
                 # plot residuals for cluster sizes separately:
                 for cls in tqdm(cluster_size_cuts):
@@ -255,7 +275,7 @@ def main():
                     np.array(space_resolutions[direction]) + np.array(err_space_resolutions[direction]),
                     alpha=0.2
                 )
-                #spres_axs[tested_chamber].plot(cluster_size_cuts, err_space_resolutions[direction], marker="o", label=direction)
+            #spres_axs[tested_chamber].plot(cluster_size_cuts, err_space_resolutions[direction], marker="o", label=direction)
 
             # bins_x = (matched_bins_x + 0.5*(matched_bins_x[1]-matched_bins_x[0]))[:-1]
             # bins_y = (matched_bins_y + 0.5*(matched_bins_y[1]-matched_bins_y[0]))[:-1]
@@ -269,9 +289,8 @@ def main():
 
 
             # plot propagation errors
-            properr_axs[tested_chamber].hist(prophits_x_error[:,tested_chamber], bins=200, label="x", alpha=0.3)
-            properr_axs[tested_chamber].hist(prophits_y_error[:,tested_chamber], bins=200, label="y", alpha=0.3)
-            properr_axs[tested_chamber].set_xlim(0, 1)
+            properr_axs[tested_chamber].hist(prophits_x_error[:,tested_chamber], bins=50, label="x", alpha=0.3, range=(0,1))
+            properr_axs[tested_chamber].hist(prophits_y_error[:,tested_chamber], bins=50, label="y", alpha=0.3, range=(0,1))
             properr_axs[tested_chamber].set_xlabel("Extrapolation uncertainty (mm)")
             properr_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             properr_axs[tested_chamber].legend()
@@ -302,31 +321,34 @@ def main():
         print("Saving plots...")
         
         spres_fig.tight_layout()
-        spres_fig.savefig(os.path.join(args.odir, "space_resolution.png"))
+        spres_fig.savefig(args.odir/"space_resolution.png")
 
         residual_fig.tight_layout()
-        residual_fig.savefig(os.path.join(args.odir, "residuals.png"))
+        residual_fig.savefig(args.odir/"residuals.png")
 
         residual_cls_fig.tight_layout()
-        residual_cls_fig.savefig(os.path.join(args.odir, "residuals_cls.png"))
+        residual_cls_fig.savefig(args.odir/"residuals_cls.png")
 
         properr_fig.tight_layout()
-        properr_fig.savefig(os.path.join(args.odir, "extrapolation_error.png"))
+        properr_fig.savefig(args.odir/"extrapolation_error.png")
         
         rotation_fig.tight_layout()
-        rotation_fig.savefig(os.path.join(args.odir, "rotation.png"))
+        rotation_fig.savefig(args.odir/"rotation.png")
 
         prophits_fig.tight_layout()
-        prophits_fig.savefig(os.path.join(args.odir, "prophits.png"))
+        prophits_fig.savefig(args.odir/"prophits.png")
 
         residuals2d_xx_fig.tight_layout()
-        residuals2d_xx_fig.savefig(os.path.join(args.odir, "residuals2d_xx.png"))
+        residuals2d_xx_fig.savefig(args.odir/"residuals2d_xx.png")
 
         residuals2d_xy_fig.tight_layout()
-        residuals2d_xy_fig.savefig(os.path.join(args.odir, "residuals2d_xy.png"))
+        residuals2d_xy_fig.savefig(args.odir/"residuals2d_xy.png")
 
         cluster_size_fig.tight_layout()
-        cluster_size_fig.savefig(os.path.join(args.odir, "cluster_size.png"))
+        cluster_size_fig.savefig(args.odir/"cluster_size.png")
+
+        chi2_fig.tight_layout()
+        chi2_fig.savefig(args.odir/"chi2.png")
 
         # combine x and y angle corrections, then save:
         correction_angles = {
