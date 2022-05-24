@@ -80,7 +80,10 @@ int main (int argc, char** argv) {
       DetectorTracker(3, 3, 89.5, 89.5, 358),
     };
     DetectorLarge detectorsLarge[3] = {
-      DetectorLarge(0, 4, 501.454, 659.804, 430.6, 4, 384), // GE2/1
+      //bmin, bmax, height, nstrips = 487.5, 631.5, 389.4, 384
+      //DetectorLarge(0, 4, 501.454, 659.804, 430.6, 4, 384), // GE2/1
+      DetectorLarge(0, 4, 488.8, 628.8, 390.9, 4, 384),
+      //DetectorLarge(0, 4, 487.5, 631.5, 389.4, 4, 384), // GE2/1
       DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384), // ME0
       DetectorLarge(3, 6, 179, 179, 89.5, 1, 512) // 20x10
     };
@@ -95,10 +98,12 @@ int main (int argc, char** argv) {
     detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
     detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
     //detectorsLarge[0].setPosition(0., 0., 0., 0.); // todo: x and y alignment
-    detectorsLarge[0].setPosition(0., 0., 0., 0.);//-0.7509290623979403);
+    detectorsLarge[0].setPosition(-159.606, -214.9289, 0., -17.69e-3);
+    //detectorsLarge[0].setPosition(-159.606, -220.9289, 0., 7*17.69e-3);
+    //detectorsLarge[0].setPosition(-161.658, -219.081, 0., 0.);
     //detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
     detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°, todo: x and y alignment
-    detectorsLarge[2].setPosition(0., 0., 0., 0); // todo: x and y alignment
+    detectorsLarge[2].setPosition(0., 0., 518.5, 0); // todo: x and y alignment
     
     // rechit variables
     int nrechits;

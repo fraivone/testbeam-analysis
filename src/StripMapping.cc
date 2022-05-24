@@ -13,6 +13,12 @@
 StripMapping::StripMapping(std::string mappingFilePath) {
 	DataFrame mappingDataFrame = DataFrame::fromCsv(mappingFilePath);
 
+    // populate mapping with zeros
+    for (int i=0; i<24; i++) {
+		for (int j=0; j<128; j++)
+            to_strip[i][j] = 0;
+	}
+
 	int vfatId, vfatChannel, eta, strip;
 	// iterate on rows:
 	for (int irow=0; irow<mappingDataFrame.getNRows(); irow++) {
@@ -30,13 +36,15 @@ StripMapping::StripMapping(std::string mappingFilePath) {
 
 void StripMapping::print() {
 	std::cout << "Eta mapping" << std::endl;
-	for (auto eta:to_eta) std::cout << eta << " ";
+    std::cout << "vfat\teta" << std::endl;
+	for (int vfat=0; vfat<12; vfat++) std::cout << vfat << "\t" << to_eta[vfat] << std::endl;
 	std::cout << std::endl;
 
 	std::cout << "Strip mapping" << std::endl;
+    std::cout << "vfat\tchannel\tstrip" << std::endl;
 	for (int i=0; i<12; i++) {
-		for (int j=0; j<128; j++) std::cout << to_strip[i][j] << " ";
-		std::cout << std::endl;
+		for (int j=0; j<128; j++)
+            std::cout << i << "\t" << j << "\t" << to_strip[i][j] << std::endl;
 	}
 	std::cout << std::endl;
 }

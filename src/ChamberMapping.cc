@@ -27,6 +27,13 @@ ChamberMapping::ChamberMapping(std::string mappingFilePath) {
 
 void ChamberMapping::print() {
 	std::cout << "Chamber mapping" << std::endl;
-	for (auto chamber:to_chamber) std::cout << chamber << " ";
-	std::cout << std::endl;
+
+    std::cout << "slot\toh\tvfat\tchamber" << std::endl;
+    for (int slot=0; slot<4; slot++) {
+        for (int oh=0; oh<4; oh++) {
+            for (int vfat=0; vfat<24; vfat++) {
+                std::cout << slot << "\t" << oh << "\t" << vfat << "\t" << to_chamber[slot][oh][vfat] << std::endl;
+            }
+        }
+    }
 }

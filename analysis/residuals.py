@@ -15,8 +15,18 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
+hep.cms.label()#, data=<True|False>, lumi=50, year=2017)
+
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(8)
+
+chamber_text = "GEM-10x10-380XY-BARI-0{}\n"\
+        +"10x10 $cm^2$ triple-GEM\n"\
+        +"125 µm strip pitch\n"\
+        +"Ar-$CO_2$ 70%-30%\n"\
+        +"Equivalent divider current 740 µA\n"\
+        +"$5\,M#Omega$ high voltage divider\n"\
+        +"Cluster size < 10"
 
 def linear_function(x, *p):
     q, m = p
@@ -33,9 +43,9 @@ def gauss2(x, *p):
     return A1*scipy.stats.norm.pdf(x, loc=mu1, scale=sigma1) + A2*scipy.stats.norm.pdf(x, loc=mu2, scale=sigma2)
     #return gauss(x, A1, mu1, sigma1) + gauss(x, A2, mu2, sigma2)
 
-def analyse_residuals(residuals, range, nbins, ax, legend, xlabel, pulls=False):
+def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=False, color="red"):
     if pulls: ax, ax_pulls = ax
-    points, bins = np.histogram(residuals, bins=nbins, range=range)
+    points, bins = np.histogram(residuals, bins=nbins, range=histo_range)
     bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
     
     # gaussian fit
@@ -53,13 +63,13 @@ def analyse_residuals(residuals, range, nbins, ax, legend, xlabel, pulls=False):
     
     # plot data and fit
     ax.hist(
-        residuals, bins=nbins, range=range,
-        histtype="stepfilled", linewidth=1, facecolor="none", edgecolor="k",
+        residuals, bins=nbins, range=histo_range,
+        histtype="stepfilled", linewidth=2, facecolor="none", edgecolor="k",
         label = legend
     )
     #ax.scatter(bins, points, marker="o", label=label)
     xvalues = np.linspace(bins[0], bins[-1], 1000)
-    ax.plot(xvalues, gauss(xvalues, *coeff), color="red")
+    ax.plot(xvalues, gauss(xvalues, *coeff), color=color, linewidth=2)
     ax.set_xlabel(xlabel)
     binning_um = 1e3*(bins[1]-bins[0])
     ax.set_ylabel(f"Events/{binning_um:1.0f} µm")
@@ -114,9 +124,10 @@ def main():
         # Preparing figures:
         print("Starting plotting...")
         directions = ["x", "y"]
-        residual_fig, residual_axs = plt.subplots(nrows=4, ncols=4, figsize=(50,25), gridspec_kw={'height_ratios': [2, 1, 2, 1]})
+        residual_fig, residual_axs = plt.subplots(nrows=4, ncols=4, figsize=(50,30), gridspec_kw={'height_ratios': [2, 1, 2, 1]})
+        #residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,25))
         residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
-        spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
+        spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(45,10))
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         properr_fig, properr_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         prophits_fig, prophits_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
@@ -145,7 +156,7 @@ def main():
             chi2 = track_chi2[:,tested_chamber]
 
             space_resolutions, err_space_resolutions = dict(), dict()
-            cluster_size_cuts = list(range(2,11))
+            cluster_size_cuts = list(range(2,10))
 
             for idirection in range(2):
                 direction = directions[idirection]
@@ -167,17 +178,30 @@ def main():
                 # plot residuals for all cluster sizes:
                 space_resolution, err_space_resolution = analyse_residuals(
                     residuals[idirection],
-                    (-0.7, 0.7), 45,
-                    [
-                        residual_axs[idirection*2][tested_chamber],
-                        residual_axs[idirection*2+1][tested_chamber]
-                    ],
-                    "", f"{directions[idirection]} residual (mm)",
-                    pulls=True
+                    (-0.85, 0.5), 45,
+                    residual_axs[idirection*2][tested_chamber],
+                    #[
+                    #    residual_axs[idirection*2][tested_chamber],
+                    #    residual_axs[idirection*2+1][tested_chamber]
+                    #],
+                    "", f"Residual {direction} (mm)",
+                    pulls=False, color=["red", "blue"][idirection]
                 )
-                residual_axs[idirection*2][tested_chamber].set_title(
-                    f"BARI-0{tested_chamber+1} {direction} - {space_resolution:1.0f} µm"
+                residual_axs[idirection*2][tested_chamber].text(
+                    0.05, 0.9,
+                    chamber_text.format(tested_chamber+1),
+                    transform=residual_axs[idirection*2][tested_chamber].transAxes,
+                    va="top", linespacing=1.7
                 )
+                residual_axs[idirection*2][tested_chamber].text(
+                    0.95, 0.9, 
+                    f"$\sigma$ = {space_resolution:1.1f} $\pm$ {err_space_resolution:1.1f} µm",
+                    transform=residual_axs[idirection*2][tested_chamber].transAxes,
+                    va="top", ha="right"
+                )
+                hep.cms.text(text="Preliminary", ax=residual_axs[idirection*2][tested_chamber])
+
+
                 residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
 
                 chi2_axs[idirection][tested_chamber].hist2d(
@@ -269,11 +293,23 @@ def main():
                 residuals2d_xx_axs[idirection][tested_chamber].set_ylabel(f"Residual {direction} (mm)")
 
                 spres_axs[tested_chamber].plot(cluster_size_cuts, space_resolutions[direction], marker="o", label=direction)
+                spres_axs[tested_chamber].text(
+                    0.05, 0.9,
+                    chamber_text.format(tested_chamber+1),
+                    transform=spres_axs[tested_chamber].transAxes,
+                    va="top", linespacing=1.7
+                )
                 spres_axs[tested_chamber].fill_between(
                     cluster_size_cuts,
                     np.array(space_resolutions[direction]) - np.array(err_space_resolutions[direction]),
                     np.array(space_resolutions[direction]) + np.array(err_space_resolutions[direction]),
                     alpha=0.2
+                )
+                hep.cms.text(text="Preliminary", ax=spres_axs[tested_chamber])
+                spres_axs[tested_chamber].text(
+                    1., 1., "CERN H4 test beam",
+                    va="bottom", ha="right", weight="bold",
+                    transform = spres_axs[tested_chamber].transAxes
                 )
             #spres_axs[tested_chamber].plot(cluster_size_cuts, err_space_resolutions[direction], marker="o", label=direction)
 
@@ -297,7 +333,7 @@ def main():
 
             spres_axs[tested_chamber].set_xlabel("Cluster size")            
             spres_axs[tested_chamber].set_ylabel(f"Residual sigma (µm)")
-            spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
+            #spres_axs[tested_chamber].set_title(f"BARI-0{tested_chamber+1}")
             spres_axs[tested_chamber].legend()
 
             h, binsx, binsy, img = cluster_size_axs[tested_chamber].hist2d(

@@ -368,6 +368,14 @@ int main (int argc, char** argv) {
     {5, &me0StripMapping},
     {6, &rectangularStripMapping}
   };
+  if (verbose) {
+      for (auto stripMapping:stripMappings) {
+          std::cout << "Chamber " << stripMapping.first << std::endl;
+          stripMapping.second->print();
+      }
+
+      chamberMapping.print();
+  }
 
   GEMUnpacker * m_unpacker = new GEMUnpacker(ifiles, isFedKit, ofile);
   m_unpacker->setParameters(verbose, checkSyncronization);
