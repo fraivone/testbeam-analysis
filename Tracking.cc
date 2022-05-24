@@ -47,7 +47,7 @@ int main (int argc, char** argv) {
     int max_events = -1;
     bool verbose = false;
     double trackerAngles[4] = {
-      .00102455514842, -.00105457956694, -.00002029043069, .00080694014877
+        0., 0., 0., 0.
     };
     for (int iarg=0; iarg<argc; iarg++) {
       std::string arg = argv[iarg];
@@ -90,17 +90,13 @@ int main (int argc, char** argv) {
       {6, &detectorsLarge[2]}
     };
 
-    detectorTrackers[0].setPosition(+2.06244, +0.269035, -(697+254+294), trackerAngles[0]);
-    detectorTrackers[1].setPosition(+0.207079, -0.292939, -(254+294), trackerAngles[1]);
-    detectorTrackers[2].setPosition(-0.577936, +0.332708, 170., trackerAngles[2]);
-    detectorTrackers[3].setPosition(-0.108215, -0.0905448, 170.+697., trackerAngles[3]);
-    //detectorsLarge[0].setPosition(0., 0., 0., 0.); // todo: x and y alignment
-    detectorsLarge[0].setPosition(-159.606, -214.9289, 0., -17.69e-3);
-    //detectorsLarge[0].setPosition(-159.606, -220.9289, 0., 7*17.69e-3);
-    //detectorsLarge[0].setPosition(-161.658, -219.081, 0., 0.);
-    //detectorsLarge[0].setPosition(0., 0., 0., 0.015515778476258502);
-    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°, todo: x and y alignment
-    detectorsLarge[2].setPosition(0., 0., 518.5, 0); // todo: x and y alignment
+    detectorTrackers[0].setPosition(0., 0., -(697+254+294), trackerAngles[0]);
+    detectorTrackers[1].setPosition(0., 0., -(254+294), trackerAngles[1]);
+    detectorTrackers[2].setPosition(0., 0., 170., trackerAngles[2]);
+    detectorTrackers[3].setPosition(0., 0., 170.+697., trackerAngles[3]);
+    detectorsLarge[0].setPosition(0., 0., 0., 0.);
+    detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°
+    detectorsLarge[2].setPosition(0., 0., 0., 1.5707963267948966);
     
     // rechit variables
     int nrechits;

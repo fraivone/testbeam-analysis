@@ -208,13 +208,8 @@ int main (int argc, char** argv) {
             std::cout << " eta=" << clustersInEvent[icluster].getEta();
         }
         if (chamber==4) rechit = detectorGe21.createRechit(clustersInEvent[icluster]);
-<<<<<<< HEAD
-        else if (chamber==5) rechit = detectorMe0.createRechit(clustersInEvent[icluster]);
-        else if (chamber==6) rechit = detectorRectangle.createRechit(clustersInEvent[icluster]);
-=======
         else if (chamber==5) rechit = detectorMe0Blank.createRechit(clustersInEvent[icluster]);
         else if (chamber==6) rechit = detectorMe0Random.createRechit(clustersInEvent[icluster]);
->>>>>>> Update geometry in reconstruction
         vecRechitChamber.push_back(chamber);
         vecRechitEta.push_back(clustersInEvent[icluster].getEta());
         vecRechitX.push_back(rechit.getCenter());
