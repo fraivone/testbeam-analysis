@@ -56,8 +56,8 @@ int main (int argc, char** argv) {
     DetectorTracker(3, 3, 89.5, 89.5, 358),
   };
   DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
-  DetectorLarge detectorMe0(0, 5, 127.584, 434.985, 868.18, 8, 384);
-  DetectorLarge detectorRectangle(3, 6, 179, 179, 89.5, 1, 512);
+  DetectorLarge detectorMe0Blank(0, 5, 127.584, 434.985, 868.18, 8, 384);
+  DetectorLarge detectorMe0Random(0, 6, 127.584, 434.985, 868.18, 8, 384);
 
   // digi variables
   int nhits;
@@ -201,8 +201,8 @@ int main (int argc, char** argv) {
         int chamber = clustersInEvent[icluster].getChamber();
         //rechit = Rechit(chamber, 0, clustersInEvent[icluster]);
         if (chamber==4) rechit = detectorGe21.createRechit(clustersInEvent[icluster]);
-        else if (chamber==5) rechit = detectorMe0.createRechit(clustersInEvent[icluster]);
-        else if (chamber==6) rechit = detectorMe0.createRechit(clustersInEvent[icluster]);
+        else if (chamber==5) rechit = detectorMe0Blank.createRechit(clustersInEvent[icluster]);
+        else if (chamber==6) rechit = detectorMe0Random.createRechit(clustersInEvent[icluster]);
         vecRechitChamber.push_back(chamber);
         vecRechitEta.push_back(clustersInEvent[icluster].getEta());
         vecRechitX.push_back(rechit.getCenter());
