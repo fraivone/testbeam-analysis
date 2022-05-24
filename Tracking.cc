@@ -80,12 +80,9 @@ int main (int argc, char** argv) {
       DetectorTracker(3, 3, 89.5, 89.5, 358),
     };
     DetectorLarge detectorsLarge[3] = {
-      //bmin, bmax, height, nstrips = 487.5, 631.5, 389.4, 384
-      //DetectorLarge(0, 4, 501.454, 659.804, 430.6, 4, 384), // GE2/1
-      DetectorLarge(0, 4, 488.8, 628.8, 390.9, 4, 384),
-      //DetectorLarge(0, 4, 487.5, 631.5, 389.4, 4, 384), // GE2/1
-      DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384), // ME0
-      DetectorLarge(3, 6, 179, 179, 89.5, 1, 512) // 20x10
+      DetectorLarge(0, 4, 488.8, 628.8, 390.9, 4, 384), // GE2/1
+      DetectorLarge(0, 5, 127.584, 434.985, 868.18, 8, 384), // ME0 blank
+      DetectorLarge(0, 6, 127.584, 434.985, 868.18, 8, 384), // ME0 random
     };
     std::map<int, DetectorGeometry*> detectorsMap = {
       {4, &detectorsLarge[0]},
