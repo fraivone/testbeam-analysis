@@ -355,7 +355,6 @@ int main (int argc, char** argv) {
   StripMapping trackerStripMapping(mappingBaseDir+"/tracker_mapping.csv");
   StripMapping ge21StripMapping(mappingBaseDir+"/ge21_mapping.csv");
   StripMapping me0StripMapping(mappingBaseDir+"/me0_mapping.csv");
-  StripMapping rectangularStripMapping(mappingBaseDir+"/20x10_mapping.csv");
   ChamberMapping chamberMapping(mappingBaseDir+"/chamber_mapping.csv");
   std::cout << "Mapping files ok." << std::endl;
 
@@ -366,7 +365,7 @@ int main (int argc, char** argv) {
     {3, &trackerStripMapping},
     {4, &ge21StripMapping},
     {5, &me0StripMapping},
-    {6, &rectangularStripMapping}
+    {6, &me0StripMapping},
   };
 
   GEMUnpacker * m_unpacker = new GEMUnpacker(ifiles, isFedKit, ofile);

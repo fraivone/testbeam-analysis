@@ -69,8 +69,11 @@ configure_file(mapping/nov2021/me0_mapping.csv mapping/nov2021/me0_mapping.csv C
 configure_file(mapping/nov2021/20x10_mapping.csv mapping/nov2021/20x10_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/chamber_mapping.csv mapping/nov2021/chamber_mapping.csv COPYONLY)
 
-configure_file(analysis/alignment.py analysis/alignment.py COPYONLY)
-configure_file(analysis/efficiency.py analysis/efficiency.py COPYONLY)
+configure_file(mapping/may2022/tracker_mapping.csv mapping/may2022/tracker_mapping.csv COPYONLY)
+configure_file(mapping/may2022/ge21_mapping.csv mapping/may2022/ge21_mapping.csv COPYONLY)
+configure_file(mapping/may2022/me0_mapping.csv mapping/may2022/me0_mapping.csv COPYONLY)
+configure_file(mapping/may2022/chamber_mapping.csv mapping/may2022/chamber_mapping.csv COPYONLY)
+
 configure_file(analysis/residuals.py analysis/residuals.py COPYONLY)
 configure_file(analysis/profiles.py analysis/profiles.py COPYONLY)
 configure_file(analysis/ge21.py analysis/ge21.py COPYONLY)
