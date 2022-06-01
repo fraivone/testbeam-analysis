@@ -1,20 +1,18 @@
 import os, sys, pathlib
 import argparse
-from tqdm import tqdm
 
 import uproot
 import numpy as np
+import pandas as pd
 import awkward as ak
 import scipy
 from scipy.optimize import curve_fit
 
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
-
-n_chambers = 5
-n_eta = 5
 
 def main():
     parser = argparse.ArgumentParser()
@@ -30,51 +28,36 @@ def main():
         digi_tree = digi_file["outputtree"]
         if args.verbose: digi_tree.show()
 
-        print("Reading tree...")
-        digi_eta = ak.flatten(digi_tree["digiEta"].array(entry_stop=args.events))
-        digi_oh = ak.flatten(digi_tree["OH"].array(entry_stop=args.events))
-        digi_chamber = ak.flatten(digi_tree["digiChamber"].array(entry_stop=args.events))
-        digi_direction = ak.flatten(digi_tree["digiDirection"].array(entry_stop=args.events))
-        digi_strip = ak.flatten(digi_tree["digiStrip"].array(entry_stop=args.events))
+        digi_oh = digi_tree["OH"].array(entry_stop=args.events)
+        digi_vfat = digi_tree["VFAT"].array(entry_stop=args.events)
+        digi_chamber = digi_tree["digiChamber"].array(entry_stop=args.events)
+        digi_eta = digi_tree["digiEta"].array(entry_stop=args.events)
+        digi_strip = digi_tree["digiStrip"].array(entry_stop=args.events)
 
-        print("digi_eta", digi_eta)
-        print("digi_oh", digi_oh)
-        print("digi_chamber", digi_chamber)
-        print("digi_direction", digi_direction)
-        print("digi_strip", digi_strip)
+        for chamber in np.unique(ak.flatten(digi_chamber)):
+            for eta in np.unique(ak.flatten(digi_eta)):
 
-        for chamber in range(n_chambers):
-            digi_strip_masked = digi_strip[digi_chamber==chamber]
-            digi_eta_masked = digi_eta[digi_chamber==chamber]
-            
-            print("chamber", chamber)
-            print("Strip", digi_strip_masked)
-            print("Eta", digi_eta_masked)
+                chamber_filter = digi_chamber==chamber
+                eta_filter = digi_eta==eta
+                filtered_strips = ak.flatten(digi_strip[(chamber_filter)&(eta_filter)])
+                filtered_oh = ak.flatten(digi_oh[(chamber_filter)&(eta_filter)])
+                filtered_vfat = ak.flatten(digi_vfat[(chamber_filter)&(eta_filter)])
 
-            occupancy_fig, occupancy_ax = plt.subplots(figsize=(12, 9))
-            for eta in range(n_eta):
-                h, xedges, _ = occupancy_ax.hist(
-                    digi_strip_masked[digi_eta_masked==eta],
-                    range=(0,380),
-                    bins=380,
-                    histtype="step",
-                    label=f"$\eta = {eta}$"
-                )
-                #print("Chamber", chamber, "eta", eta, "edges", xedges)
-                occupancy_ax.set_xlabel("Strip")
+                if args.verbose: print(f"chamber {chamber}, eta {eta}, strips:", filtered_strips)
+                
+                if ak.count(filtered_strips) == 0: continue # no vfats for selected chamber, eta
+               
+                oh = np.unique(filtered_oh)[0]
+                vfats = np.unique(filtered_vfat)
+
+                occupancy_fig, occupancy_ax = plt.figure(figsize=(12,10)), plt.axes()
+                for vfat in vfats:
+                    filtered_strips_vfat = filtered_strips[filtered_vfat==vfat]
+                    if args.verbose: print(f"  chamber {chamber}, eta {eta}, VFAT {vfat}, strips:", filtered_strips_vfat)
+                    occupancy_ax.hist(filtered_strips_vfat, bins=358, range=(0,358), label="OH {}, VFAT {}".format(oh, vfat), alpha=0.5)
                 occupancy_ax.legend()
-            occupancy_fig.savefig(args.odir / f"occupancy_chamber{chamber}.png")
-
-            occupancy2d_fig, occupancy2d_ax = plt.subplots(figsize=(12, 9))
-            h, x, y, img = occupancy2d_ax.hist2d(
-                digi_strip_masked,
-                digi_eta_masked,
-                range=((0,380), (0, 5)),
-                bins=100
-            )
-            occupancy2d_ax.set_xlabel("Strip")
-            occupancy2d_ax.set_ylabel("Eta")
-            occupancy2d_fig.colorbar(img, ax=occupancy2d_ax)
-            occupancy2d_fig.savefig(args.odir / f"occupancy2d_chamber{chamber}.png")
+                occupancy_ax.set_title("chamber {}, eta {}".format(chamber, eta)) 
+                occupancy_ax.set_xlabel("Strip")
+                occupancy_fig.savefig(args.odir / f"occupancy_chamber{chamber}_eta{eta}.png")
 
 if __name__=='__main__': main()
