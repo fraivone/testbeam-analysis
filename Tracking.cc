@@ -96,7 +96,7 @@ int main (int argc, char** argv) {
     detectorTrackers[3].setPosition(0., 0., 170.+697., trackerAngles[3]);
     detectorsLarge[0].setPosition(0., 0., 0., 0.);
     detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°
-    detectorsLarge[2].setPosition(0., 0., 0., 1.5707963267948966));
+    detectorsLarge[2].setPosition(0., 0., 0., 1.5707963267948966);
     
     // rechit variables
     int nrechits;

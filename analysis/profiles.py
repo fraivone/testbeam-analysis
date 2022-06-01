@@ -60,6 +60,7 @@ def main():
         print("Starting plotting...")
         directions = ["x", "y"]
         residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
+        profile_fig, profile_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
@@ -102,6 +103,9 @@ def main():
                 binsize = 1/200*1e3
                 prophits_axs[idirection][tested_chamber].set_xlabel("Propagated hit position (mm)")
                 prophits_axs[idirection][tested_chamber].set_ylabel(f"Events/{int(binsize)} µm")
+
+                profile_axs[idirection][tested_chamber].plot(rechits[idirection])
+                profile_axs[idirection][tested_chamber].set_xlabel("Reconstructed x (mm)")
 
                 # plot residuals for all cluster sizes:
                 space_resolution = analyse_residuals(
@@ -227,6 +231,9 @@ def main():
 
         residual_fig.tight_layout()
         residual_fig.savefig(os.path.join(args.odir, "residuals.png"))
+
+        profile_fig.tight_layout()
+        profile_fig.savefig(os.path.join(args.odir, "profiles.png"))
 
         residual_cls_fig.tight_layout()
         residual_cls_fig.savefig(os.path.join(args.odir, "residuals_cls.png"))
