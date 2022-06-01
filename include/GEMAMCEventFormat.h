@@ -273,10 +273,10 @@ class AMCEvent
       uint8_t  m_AMCnum;        
       //!(8 zeroes):8    L1A ID:24    
       /*!Basically like event number, but reset by resync*/
-      uint32_t m_L1A;          
+      uint32_t m_EC;          
       //!0000:4   BX ID:12         
       /*!Bunch crossing ID*/
-      uint16_t m_BX;    
+      uint16_t m_BC;    
       //!(12 zeroes):12    Data length:20   
       /*!Overall size of this FED event fragment in 64bit words (including headers and trailers)*/
       uint32_t m_Dlength;
@@ -292,7 +292,7 @@ class AMCEvent
       uint8_t m_isCurrentPulse;
       uint8_t m_CFG_CAL_DAC;
       uint8_t m_PULSE_STRETCH;
-      uint16_t m_Latency;
+      uint16_t m_RunParameter;
       //uint8_t m_Param1;       ///<Run param1:8 
       //uint8_t m_Param2;       ///<Run param2:8
       //uint16_t m_Param3;       ///<Run param3:8 //GC : messo a 16
@@ -336,8 +336,8 @@ class AMCEvent
     AMCEvent(){};
     //!Constructor requiring arguments.
     AMCEvent(const uint8_t &AMCnum_, 
-              const uint32_t &L1A_,
-              const uint16_t &BX_, 
+              const uint32_t &EC_,
+              const uint16_t &BC_, 
               const uint32_t &Dlength_,
               const uint8_t &FV_,
               const uint8_t &Rtype_, 
@@ -345,7 +345,7 @@ class AMCEvent
               const uint8_t &isCurrentPulse_, 
               const uint8_t &CFG_CAL_DAC_, 
               const uint8_t &PULSE_STRETCH_, 
-              const uint16_t &Latency_,      
+              const uint16_t &RunParameter_,      
               const uint16_t &Onum_, 
               const uint16_t &BID_,
               const uint32_t &GEMDAV_, 
@@ -355,8 +355,8 @@ class AMCEvent
               const uint32_t &ChamT_,
               const uint8_t OOSG_) :
           m_AMCnum(AMCnum_), 
-          m_L1A(L1A_),
-          m_BX(BX_),                                 
+          m_EC(EC_),
+          m_BC(BC_),                                 
           m_Dlength(Dlength_),
           m_FV(FV_),
           m_Rtype(Rtype_),                                
@@ -364,7 +364,7 @@ class AMCEvent
           m_isCurrentPulse(isCurrentPulse_),                                  
           m_CFG_CAL_DAC(CFG_CAL_DAC_),
           m_PULSE_STRETCH(PULSE_STRETCH_),
-          m_Latency(Latency_),
+          m_RunParameter(RunParameter_),
           m_Onum(Onum_),                                    
           m_BID(BID_),
           m_GEMDAV(GEMDAV_), 
@@ -383,8 +383,8 @@ class AMCEvent
     void setAMCheader1(uint64_t word)
     {
       m_AMCnum = 0x0f & (word >> 56);     /*!AMC number*/
-      m_L1A = 0x00ffffff & (word >> 32);  /*!L1A ID */
-      m_BX = 0x0fff & (word >> 20);       /*!BX ID */
+      m_EC = 0x00ffffff & (word >> 32);  /*!L1A ID */
+      m_BC = 0x0fff & (word >> 20);       /*!BX ID */
       m_Dlength = 0x000fffff & word;      /*!Data Length */
       //std::cout << "L1A_ID " << m_L1A << std::endl;
       //std::cout << "BX " << m_BX << std::endl;
@@ -404,7 +404,7 @@ class AMCEvent
       m_CFG_CAL_DAC = 0xff & (word >> 45);
       m_PULSE_STRETCH = (int) (0x07 & (word >> 42));/* 3 bit */
       //std::cout << "ps " << (0x07 & (word >> 42)) << std::endl;
-      m_Latency = 0x03ff & (word >> 32); //word >> 32;          /*!Run Param 3 */
+      //m_RunParameter = 0x03ff & (word >> 32); //word >> 32;          /*!Run Param 3 */
       m_Onum = word >> 16;            /*!Orbit Number */
       m_BID = word;                   /*!Board ID */
       //std::cout << "OC " << m_Onum << std::endl;
@@ -430,6 +430,7 @@ class AMCEvent
     {
       m_ChamT = 0x00ffffff & (word >> 40);  /*!Chamber Timeout*/
       m_OOSG = 0b00000001 & (word >> 39);   /*!OOS GLIB*/
+      m_RunParameter = 0x03ff & (word >> 8); 
     }
 
     //!Reads the word for the AMC Trailer
@@ -441,8 +442,8 @@ class AMCEvent
     }
 
     uint8_t  AMCnum()  {return m_AMCnum;}   ///<Returns AMC number
-    uint32_t L1A()     {return m_L1A;}      ///<Returns L1A number
-    uint16_t BX()      {return m_BX;}       ///<Returns Bunch Crossing ID
+    uint32_t EC()     {return m_EC;}      ///<Returns L1A number
+    uint16_t BC()      {return m_BC;}       ///<Returns Bunch Crossing ID
     uint32_t Dlength() {return m_Dlength;}  ///<Returns Data Length (Overall size of FED event fragment)
 
     uint8_t  FV()      {return m_FV;}       ///<Returns Format Version
@@ -451,7 +452,7 @@ class AMCEvent
     uint8_t  isCurrentPulse()  {return m_isCurrentPulse;}
     uint8_t  CFG_CAL_DAC()  {return m_CFG_CAL_DAC;}
     uint8_t  PULSE_STRETCH()  {return m_PULSE_STRETCH;}
-    uint16_t Latency()  {return m_Latency;}
+    uint16_t RunParameter()  {return m_RunParameter;}
     uint16_t Onum()    {return m_Onum;}     ///<Returns Orbit number
     uint16_t BID()     {return m_BID;}      ///<Returns Board ID
 

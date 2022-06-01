@@ -91,7 +91,7 @@ class GEMUnpacker {
       std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
       m_amcEvent->setGEMeventHeader(m_word);
 
-      l1a = m_amcEvent->L1A();
+      l1a = m_amcEvent->EC();
       if (checkSyncronization) {
         for (int otherL1A:eventVecL1A) {
           if (l1a!=otherL1A) {
@@ -104,8 +104,15 @@ class GEMUnpacker {
         }
         eventVecL1A.push_back(l1a);
       }
-      latency = m_amcEvent->Latency();
+      runParameter = m_amcEvent->RunParameter();
+      //std::cout << "Run parameter " << runParameter << std::endl;
       pulse_stretch = m_amcEvent->PULSE_STRETCH();
+
+      if (verbose) {
+          std::cout << "    Run type " << (int) m_amcEvent->Rtype() << ", ";
+          std::cout << "BC " << m_amcEvent->BC() << ", ";
+          std::cout << "EC " << m_amcEvent->EC() << std::endl;
+      }
 
       //printf("GEM EVENT HEADER\n");
       //printf("%016llX\n", m_word);
@@ -125,6 +132,10 @@ class GEMUnpacker {
           //printf("OH %d\n",m_gebdata->InputID());
           
           oh = m_gebdata->InputID();
+          
+          if (verbose) {
+              std::cout << "        " << "slot\toh\tvfat\tBC\tEC\teta\tchamber\tcrc" << std::endl;
+          }
           for (unsigned short k = 0; k < m_nvb; k++) {
             VFATdata * m_vfatdata = new VFATdata();
             // read 3 vfat block words, totaly 192 bits
@@ -154,9 +165,10 @@ class GEMUnpacker {
             eta = stripMapping->to_eta[vfatId];
 
             if (verbose) {
-              std::cout << "        " << slot << "\t" << oh << "\t" << vfatId;
-              std::cout << "\t" << m_amcEvent->Onum() << "\t" << m_amcEvent->BX() << "\t" << l1a;
-              std::cout << "\t" << eta << "\t" << chamber << std::endl;
+              std::cout << "        " << slot << "\t" << oh << "\t" << std::setw(3) << vfatId;
+              std::cout << "\t" << (int) m_vfatdata->BC() << "\t" << (int) m_vfatdata->EC();
+              std::cout << "\t" << eta << "\t" << chamber; 
+              std::cout << "\t" << (int) m_vfatdata->CRCcheck() << std::endl;
             }
 
             direction = eta%2;
@@ -215,7 +227,7 @@ class GEMUnpacker {
       TTree outputtree("outputtree", "outputtree");
 
       outputtree.Branch("nhits", &nhits);
-      outputtree.Branch("latency", &latency);
+      outputtree.Branch("runParameter", &runParameter);
       outputtree.Branch("pulse_stretch", &pulse_stretch);
       outputtree.Branch("slot", &vecSlot);
       outputtree.Branch("OH", &vecOh);
@@ -253,7 +265,6 @@ class GEMUnpacker {
           // slot == file index. To be improved?
           if (verbose) {
             std::cout << "    File " << m_files.at(slot) << std::endl;
-            std::cout << "        " << "slot\toh\tvfat\tOC\tBX\tL1A\teta\tchamber" << std::endl;
           }
           readStatus = readEvent(slot);
         }
@@ -276,7 +287,7 @@ private:
     
     /* branch and support variables: */
     int nhits;
-    int latency;
+    int runParameter;
     int pulse_stretch;
     int l1a;
     std::vector<int> eventVecL1A;
