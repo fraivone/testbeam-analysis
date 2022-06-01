@@ -50,7 +50,7 @@ def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=F
     
     # gaussian fit
     coeff = [len(residuals), ak.mean(residuals), ak.std(residuals)]
-    perr = [0]*3
+    perr = [0]*len(coeff)
     #coeff += [len(residuals)*0.1, ak.mean(residuals), 10*ak.std(residuals)]
     #print(gauss2, "bins:", bins, "\npoints:", points, coeff)
     try:
@@ -58,8 +58,9 @@ def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=F
         perr = np.sqrt(np.diag(var_matrix))
     except RuntimeError:
         print("Fit failed, using RMS instead...")
-    space_resolution = 1e3*coeff[2]
-    err_space_resolution = 1e3*perr[2]
+    
+    correction, err_correction = coeff[1], perr[1]
+    space_resolution, err_space_resolution = 1e3*coeff[2], 1e3*perr[2]
     
     # plot data and fit
     ax.hist(
@@ -76,7 +77,7 @@ def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=F
     if pulls: ax_pulls.plot(bins, (points-gauss(bins, *coeff))/np.sqrt(points), "ok")
     #residual_cls_axs[idirection][tested_chamber].legend()
 
-    return space_resolution, err_space_resolution
+    return correction, err_correction, space_resolution, err_space_resolution
 
 def main():
     parser = argparse.ArgumentParser()
@@ -131,6 +132,7 @@ def main():
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         properr_fig, properr_axs = plt.subplots(nrows=1, ncols=4, figsize=(32,7))
         prophits_fig, prophits_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
+        profile_fig, profile_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18)) 
         residuals2d_xx_fig, residuals2d_xx_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         residuals2d_xy_fig, residuals2d_xy_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         cluster_size_fig, cluster_size_axs = plt.subplots(nrows=1, ncols=4, figsize=(50,9))
@@ -138,6 +140,7 @@ def main():
         properr_position_fig, properr_position_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
 
         angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
+        translation, err_translation = np.ndarray((4,2)), np.ndarray((4,2))
         for tested_chamber in range(4):
             print(f"Processing chamber {tested_chamber}...")
             rechits = [rechits_x[:,tested_chamber], rechits_y[:,tested_chamber]]
@@ -163,6 +166,9 @@ def main():
                 space_resolutions[direction], err_space_resolutions[direction] = list(), list()
                 cluster_size = cluster_sizes[idirection]
 
+                profile_axs[idirection][tested_chamber].hist(rechits[idirection], bins=100)
+                profile_axs[idirection][tested_chamber].set_xlabel("Reconstructed x (mm)")
+
                 # plot propagated hits
                 prophits_axs[idirection][tested_chamber].hist(
                     prophits[idirection], bins=200, range=(-0.5,0.5),
@@ -176,33 +182,32 @@ def main():
                 prophits_axs[idirection][tested_chamber].set_ylabel(f"Events/{int(binsize)} µm")
 
                 # plot residuals for all cluster sizes:
-                space_resolution, err_space_resolution = analyse_residuals(
+                correction, err_correction, space_resolution, err_space_resolution = analyse_residuals(
                     residuals[idirection],
-                    (-0.85, 0.5), 45,
-                    residual_axs[idirection*2][tested_chamber],
-                    #[
-                    #    residual_axs[idirection*2][tested_chamber],
-                    #    residual_axs[idirection*2+1][tested_chamber]
-                    #],
+                    (-6.7, 6.7), 300,
+                    [
+                        residual_axs[idirection][tested_chamber],
+                        residual_axs[idirection+1][tested_chamber]
+                    ],
                     "", f"Residual {direction} (mm)",
                     pulls=False, color=["red", "blue"][idirection]
                 )
-                residual_axs[idirection*2][tested_chamber].text(
+                residual_axs[idirection][tested_chamber].text(
                     0.05, 0.9,
                     chamber_text.format(tested_chamber+1),
-                    transform=residual_axs[idirection*2][tested_chamber].transAxes,
+                    transform=residual_axs[idirection][tested_chamber].transAxes,
                     va="top", linespacing=1.7
                 )
-                residual_axs[idirection*2][tested_chamber].text(
+                residual_axs[idirection][tested_chamber].text(
                     0.95, 0.9, 
                     f"$\sigma$ = {space_resolution:1.1f} $\pm$ {err_space_resolution:1.1f} µm",
-                    transform=residual_axs[idirection*2][tested_chamber].transAxes,
+                    transform=residual_axs[idirection][tested_chamber].transAxes,
                     va="top", ha="right"
                 )
-                hep.cms.text(text="Preliminary", ax=residual_axs[idirection*2][tested_chamber])
+                translation[tested_chamber][idirection] = correction
+                err_translation[tested_chamber][idirection] = err_correction
+                hep.cms.text(text="Preliminary", ax=residual_axs[idirection][tested_chamber])
 
-
-                residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
 
                 chi2_axs[idirection][tested_chamber].hist2d(
                     chi2, 1e3*tracks_covariance[idirection],
@@ -213,11 +218,12 @@ def main():
                 chi2_axs[idirection][tested_chamber].set_xlabel(f"χ$^2_{direction}$")
                 chi2_axs[idirection][tested_chamber].set_ylabel("Fit parameters covariance (µm)")
                 
+                residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
                 # plot residuals for cluster sizes separately:
                 for cls in tqdm(cluster_size_cuts):
-                    res, err_res = analyse_residuals(
+                    corr, err_corr, res, err_res = analyse_residuals(
                         residuals[idirection][cluster_size==cls],
-                        (-0.45, 0.45), 30,
+                        (-3.45, 3.45), 120,
                         residual_cls_axs[idirection][tested_chamber],
                         f"cluster size {cls}",
                         f"{directions[idirection]} residual (mm)"
@@ -362,6 +368,9 @@ def main():
         residual_fig.tight_layout()
         residual_fig.savefig(args.odir/"residuals.png")
 
+        profile_fig.tight_layout()
+        profile_fig.savefig(os.path.join(args.odir, "profile.png"))
+
         residual_cls_fig.tight_layout()
         residual_cls_fig.savefig(args.odir/"residuals_cls.png")
 
@@ -387,12 +396,15 @@ def main():
         chi2_fig.savefig(args.odir/"chi2.png")
 
         # combine x and y angle corrections, then save:
-        correction_angles = {
+        corrections = {
+            "translation": translation,
+            "error_translation": err_translation,
             "angle": np.sum(angles/err_angles**2, axis=1)/np.sum(1/err_angles**2, axis=1),
-            "error": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
+            "error_angle": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
         }
-        pd.DataFrame.from_dict(correction_angles).T.to_csv(
-            os.path.join(args.odir, "angles.txt"), sep=" "
+        print(corrections)
+        pd.DataFrame.from_dict(corrections).T.to_csv(
+            os.path.join(args.odir, "corrections.txt"), sep=" "
         )
 
 if __name__=='__main__': main()
