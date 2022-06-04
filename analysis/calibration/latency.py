@@ -19,7 +19,7 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-n", "--events", type=int, default=-1)
     parser.add_argument("--fed", type=int, default=0)
-    parser.add_argument("--slot", type=int, default=0)
+    parser.add_argument("--slot", type=int)
     args = parser.parse_args()
 
     os.makedirs(args.odir, exist_ok=True)
@@ -31,10 +31,16 @@ def main():
 
         print("Reading input tree...")
         latency = input_tree["runParameter"].array(entry_stop=args.events)
+        slots = input_tree["slot"].array(entry_stop=args.events)
         ohs = input_tree["OH"].array(entry_stop=args.events)
         vfats = input_tree["VFAT"].array(entry_stop=args.events)
         strips = input_tree["digiStrip"].array(entry_stop=args.events)
 
+        slot_mask = slots==args.slot
+        slots, ohs, vfats, strips = slots[slot_mask], ohs[slot_mask], vfats[slot_mask], strips[slot_mask]
+
+        print("Slots:", np.unique(ak.flatten(slots)))
+        print("OH:", np.unique(ak.flatten(ohs)))
         print("Latency:", latency)
 
         latency_tuples = list()
@@ -85,6 +91,7 @@ def main():
             latency_ax.set_xlim(30, 80)
             latency_ax.set_xlabel("Latency (BX)")
             latency_ax.set_ylabel("Counts")
+            latency_ax.set_title("OH {}, VFAT {}".format(oh, vfat))
             latency_ax.legend()
             return optimal_latency
 
@@ -97,7 +104,7 @@ def main():
         optimal_latencies.rename("latency", inplace=True)
         latencies_df = optimal_latencies.to_frame()
         latencies_df["fed"] = args.fed
-        latencies_df["slot"] = args.slot
+        latencies_df["slot"] = 0 # hack, to be improved
         print(latencies_df)
         latencies_df.to_csv(args.odir / "latencies.cfg", sep=";")
 
