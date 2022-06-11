@@ -133,9 +133,9 @@ class GEMUnpacker {
           
           oh = m_gebdata->InputID();
           
-          if (verbose) {
-              std::cout << "        " << "slot\toh\tvfat\tBC\tEC\teta\tchamber\tcrc" << std::endl;
-          }
+          // if (verbose) {
+          //     std::cout << "        " << "slot\toh\tvfat\tBC\tEC\teta\tchamber\tcrc\tdata" << std::endl;
+          // }
           for (unsigned short k = 0; k < m_nvb; k++) {
             VFATdata * m_vfatdata = new VFATdata();
             // read 3 vfat block words, totaly 192 bits
@@ -159,16 +159,21 @@ class GEMUnpacker {
             m_vfatdata->read_tw(m_word);
 
             vfatId = m_vfatdata->Pos();
+
             chamber = chamberMapping->to_chamber[slot][oh][vfatId];
-            if (stripMappings.count(chamber)==0) return 0;
+            //if (stripMappings.count(chamber)==0) return 0;
             StripMapping *stripMapping = stripMappings.at(chamber);
             eta = stripMapping->to_eta[vfatId];
+
 
             if (verbose) {
               std::cout << "        " << slot << "\t" << oh << "\t" << std::setw(3) << vfatId;
               std::cout << "\t" << (int) m_vfatdata->BC() << "\t" << (int) m_vfatdata->EC();
               std::cout << "\t" << eta << "\t" << chamber; 
-              std::cout << "\t" << (int) m_vfatdata->CRCcheck() << std::endl;
+              std::cout << "\t" << (int) m_vfatdata->CRCcheck();
+              std::cout << "\t" << std::bitset<64>(m_vfatdata->msData());
+              std::cout << "" << std::bitset<64>(m_vfatdata->lsData());
+              std::cout << std::endl;
             }
 
             direction = eta%2;
