@@ -43,8 +43,7 @@ def gauss2(x, *p):
     return A1*scipy.stats.norm.pdf(x, loc=mu1, scale=sigma1) + A2*scipy.stats.norm.pdf(x, loc=mu2, scale=sigma2)
     #return gauss(x, A1, mu1, sigma1) + gauss(x, A2, mu2, sigma2)
 
-def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=False, color="red"):
-    if pulls: ax, ax_pulls = ax
+def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, color="red"):
     points, bins = np.histogram(residuals, bins=nbins, range=histo_range)
     bins = bins[:-1]+ 0.5*(bins[1:] - bins[:-1])
     
@@ -74,8 +73,6 @@ def analyse_residuals(residuals, histo_range, nbins, ax, legend, xlabel, pulls=F
     ax.set_xlabel(xlabel)
     binning_um = 1e3*(bins[1]-bins[0])
     ax.set_ylabel(f"Events/{binning_um:1.0f} µm")
-    if pulls: ax_pulls.plot(bins, (points-gauss(bins, *coeff))/np.sqrt(points), "ok")
-    #residual_cls_axs[idirection][tested_chamber].legend()
 
     return correction, err_correction, space_resolution, err_space_resolution
 
@@ -125,8 +122,7 @@ def main():
         # Preparing figures:
         print("Starting plotting...")
         directions = ["x", "y"]
-        residual_fig, residual_axs = plt.subplots(nrows=4, ncols=4, figsize=(50,30), gridspec_kw={'height_ratios': [2, 1, 2, 1]})
-        #residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,25))
+        residual_fig, residual_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,20))
         residual_cls_fig, residual_cls_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
         spres_fig, spres_axs = plt.subplots(nrows=1, ncols=4, figsize=(45,10))
         rotation_fig, rotation_axs = plt.subplots(nrows=2, ncols=4, figsize=(50,18))
@@ -139,10 +135,9 @@ def main():
         chi2_fig, chi2_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
         properr_position_fig, properr_position_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
 
-        angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
-        translation, err_translation = np.ndarray((4,2)), np.ndarray((4,2))
-        for tested_chamber in range(4):
-            print(f"Processing chamber {tested_chamber}...")
+        angles, err_angles = np.ndarray((2,4)), np.ndarray((2,4))
+        translation, err_translation = np.ndarray((2,4)), np.ndarray((2,4))
+        for tested_chamber in tqdm(range(4)):
             rechits = [rechits_x[:,tested_chamber], rechits_y[:,tested_chamber]]
             # apply angular correction to rechits:
             # rechits_corrected = [
@@ -185,10 +180,7 @@ def main():
                 correction, err_correction, space_resolution, err_space_resolution = analyse_residuals(
                     residuals[idirection],
                     (-6.7, 6.7), 300,
-                    [
-                        residual_axs[idirection][tested_chamber],
-                        residual_axs[idirection+1][tested_chamber]
-                    ],
+                    residual_axs[idirection][tested_chamber],
                     "", f"Residual {direction} (mm)",
                     pulls=False, color=["red", "blue"][idirection]
                 )
@@ -208,7 +200,9 @@ def main():
                 err_translation[tested_chamber][idirection] = err_correction
                 hep.cms.text(text="Preliminary", ax=residual_axs[idirection][tested_chamber])
 
-
+                translation[idirection][tested_chamber] = correction
+                err_translation[idirection][tested_chamber] = err_correction
+ 
                 chi2_axs[idirection][tested_chamber].hist2d(
                     chi2, 1e3*tracks_covariance[idirection],
                     range=((0,1), (0,0.1)), bins=50
@@ -220,7 +214,7 @@ def main():
                 
                 residual_cls_axs[idirection][tested_chamber].set_title(f"BARI-0{tested_chamber+1} {direction}")
                 # plot residuals for cluster sizes separately:
-                for cls in tqdm(cluster_size_cuts):
+                for cls in cluster_size_cuts:
                     corr, err_corr, res, err_res = analyse_residuals(
                         residuals[idirection][cluster_size==cls],
                         (-3.45, 3.45), 120,
@@ -266,8 +260,8 @@ def main():
                 # calculate angles:
                 theta = np.arcsin(m)
                 err_theta = err_m/np.sqrt(1-m**2)
-                angles[tested_chamber][idirection] = (-1)**idirection*theta
-                err_angles[tested_chamber][idirection] = err_theta
+                angles[idirection][tested_chamber] = (-1)**idirection*theta
+                err_angles[idirection][tested_chamber] = err_theta
 
                 x_fit = np.linspace(-30, 30, 20)
                 rotation_axs[idirection][tested_chamber].plot(x_fit, linear_function(x_fit, *coeff), color="red")
@@ -397,14 +391,15 @@ def main():
 
         # combine x and y angle corrections, then save:
         corrections = {
-            "translation": translation,
-            "error_translation": err_translation,
-            "angle": np.sum(angles/err_angles**2, axis=1)/np.sum(1/err_angles**2, axis=1),
-            "error_angle": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
+            "translation_x": translation[0], "translation_y": translation[1],
+            "err_translation_x": err_translation[0], "err_translation_y": err_translation[1],
+            "angle": np.sum(angles.T/err_angles.T**2, axis=1)/np.sum(1/err_angles.T**2, axis=1),
+            "err_angle": np.sqrt(1/np.sum(1/err_angles.T**2, axis=1))
         }
-        print(corrections)
-        pd.DataFrame.from_dict(corrections).T.to_csv(
-            os.path.join(args.odir, "corrections.txt"), sep=" "
+        corrections_df = pd.DataFrame.from_dict(corrections)
+        print("Corrections:\n", corrections_df)
+        pd.DataFrame.from_dict(corrections).to_csv(
+            os.path.join(args.odir, "corrections.txt"), sep=";"
         )
 
 if __name__=='__main__': main()

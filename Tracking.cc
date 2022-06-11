@@ -38,7 +38,7 @@ void interruptHandler(int dummy) {
 int main (int argc, char** argv) {
 
     if (argc<3) {
-      std::cout << "Usage: Tracks ifile ofile [--verbose] [--events n]" << std::endl;
+      std::cout << "Usage: Tracks ifile ofile [--verbose] [--events n] [-x corrections x] [-y corrections y] [--angles correction angles]" << std::endl;
       return 0;
     }
     std::string ifile   = argv[1];
@@ -46,9 +46,9 @@ int main (int argc, char** argv) {
     
     int max_events = -1;
     bool verbose = false;
-    double trackerAngles[4] = {
-        0., 0., 0., 0.
-    };
+    double trackerAngles[4] = { .01158492576947, .00388093867016,  -.00190211740939, -.00971001194466 };
+    double trackerCorrectionsX[4] = { 3.13927413131933, .83829925573446, -.67253911147153, .13453757696272 };
+    double trackerCorrectionsY[4] = { .72503599470208 -.01562296563673 -.00177620835277 -.02208594949893 };
     for (int iarg=0; iarg<argc; iarg++) {
       std::string arg = argv[iarg];
       if (arg=="--verbose") verbose = true;
@@ -61,7 +61,23 @@ int main (int argc, char** argv) {
         }
         std::cout << std::endl;
       }
-    }
+      else if (arg=="--x") {
+        std::cout << "translation x: ";
+        for (int ix=0; ix<4; ix++) {
+          trackerCorrectionsX[ix] = atof(argv[iarg+ix+1]);
+          std::cout << trackerCorrectionsX[ix] << " ";
+        }
+        std::cout << std::endl;
+      }
+      else if (arg=="--y") {
+        std::cout << "translation y: ";
+        for (int iy=0; iy<4; iy++) {
+          trackerCorrectionsY[iy] = atof(argv[iarg+iy+1]);
+          std::cout << trackerCorrectionsY[iy] << " ";
+        }
+        std::cout << std::endl;
+      }
+   }
 
     if (max_events > 0) std::cout << "Analyzing " << max_events << " events" << std::endl;
     else std::cout << "Analyzing all events" << std::endl; 
@@ -89,11 +105,11 @@ int main (int argc, char** argv) {
       {5, &detectorsLarge[1]},
       {6, &detectorsLarge[2]}
     };
-
-    detectorTrackers[0].setPosition(0., 0., -(697+254+294), trackerAngles[0]);
-    detectorTrackers[1].setPosition(0., 0., -(254+294), trackerAngles[1]);
-    detectorTrackers[2].setPosition(0., 0., 170., trackerAngles[2]);
-    detectorTrackers[3].setPosition(0., 0., 170.+697., trackerAngles[3]);
+    
+    std::array<double,4>trackerZ={ -(697+254+294), -(254+294), 170, 170+697 };
+    for (int itracker=0; itracker<4; itracker++) {
+        detectorTrackers[itracker].setPosition(trackerCorrectionsX[itracker], trackerCorrectionsY[itracker], trackerZ[itracker], trackerAngles[itracker]);
+    }
     detectorsLarge[0].setPosition(0., 0., 0., 0.);
     detectorsLarge[1].setPosition(0., 0., 0., 1.5707963267948966); // ME0 tilted by 90°
     detectorsLarge[2].setPosition(0., 0., 0., 1.5707963267948966);
