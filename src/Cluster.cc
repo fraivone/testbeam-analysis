@@ -34,7 +34,7 @@ int Cluster::getFirst() {return fFirst;}
 int Cluster::getLast() {return fLast;}
 
 int Cluster::getDirection() {
-    return fEta % 2;
+    return (fEta + 1) % 2;
 }
 
 std::vector<Cluster> Cluster::fromDigis(std::vector<Digi> digis) {

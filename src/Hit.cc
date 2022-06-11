@@ -18,10 +18,23 @@ Hit::Hit(DetectorGeometry *detector, double x, double y, double z, double errX, 
 }
 
 Hit Hit::fromLocal(DetectorGeometry *detector, double localX, double localY, double errX, double errY, double errZ) {
+    // std::cout << "              ######### DEBUGGING INFO #########" << std::endl;
+    // std::cout << "              local\t\tdet\t\tglobal" << std::endl;
+    // std::cout << "              " << localX << "\t\t" << detector->getPositionX() << "\t\t" << localX+detector->getPositionX() << std::endl;
+    // std::cout << "              " << localY << "\t\t" << detector->getPositionY() << "\t\t" << localY+detector->getPositionY() << std::endl;
+    // std::cout << "              " << detector->getPositionZ() << std::endl;
+    // std::cout << "              ######### END DEBUGGING #########" << std::endl;
+    
+    // calculate global coordinates:
+    double x = localX + detector->getPositionX();
+    double y = localY + detector->getPositionY();
+    double globalX = x*cos(detector->getTheta()) - y*sin(detector->getTheta());
+    double globalY = x*sin(detector->getTheta()) + y*cos(detector->getTheta());
+
     return Hit(
         detector,
-        localX+detector->getPositionX(), localY+detector->getPositionY(), detector->getPositionZ(),
-        errX, errY, errZ 
+        globalX, globalY, detector->getPositionZ(),
+        errX, errY, errZ
     );
 }
 

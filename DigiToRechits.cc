@@ -39,7 +39,7 @@ int main (int argc, char** argv) {
     else if (arg=="--events") max_events = atoi(argv[iarg+1]); 
   }
 
-  if (max_events > 0) std::cout << "Analyzing " << max_events << " events" << std::endl;
+  if (max_events>=0) std::cout << "Analyzing " << max_events << " events" << std::endl;
   else std::cout << "Analyzing all events" << std::endl; 
 
   TFile digiFile(ifile.c_str(), "READ");
@@ -55,7 +55,7 @@ int main (int argc, char** argv) {
     DetectorTracker(3, 2, 89.5, 89.5, 358),
     DetectorTracker(3, 3, 89.5, 89.5, 358),
   };
-  DetectorLarge detectorGe21(0, 4, 501.454, 659.804, 430.6, 4, 384);
+  DetectorLarge detectorGe21(0, 4, 488.8, 628.8, 390.9, 4, 384);
   DetectorLarge detectorMe0Blank(0, 5, 127.584, 434.985, 868.18, 8, 384);
   DetectorLarge detectorMe0Random(0, 6, 127.584, 434.985, 868.18, 8, 384);
 
@@ -65,6 +65,7 @@ int main (int argc, char** argv) {
   std::vector<int> *vecDigiEta = new std::vector<int>(); // even for x, odd for y
   std::vector<int> *vecDigiDirection = new std::vector<int>(); // 0 for x, 1 for y
   std::vector<int> *vecDigiStrip = new std::vector<int>(); // 0 to 357
+  std::vector<int> *vecRawChannel = new std::vector<int>();
 
   // cluster variables
   int nclusters;
@@ -108,7 +109,7 @@ int main (int argc, char** argv) {
   digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
   digiTree->SetBranchAddress("digiEta", &vecDigiEta);
   digiTree->SetBranchAddress("digiStrip", &vecDigiStrip);
-  //digiTree->SetBranchAddress("digiChamber", &vecDigiChamber);
+  digiTree->SetBranchAddress("CH", &vecRawChannel);
   //digiTree->SetBranchAddress("digiDirection", &vecDigiDirection);
 
   // cluster branches
@@ -121,6 +122,8 @@ int main (int argc, char** argv) {
 
   // rechit branches
   rechitTree.Branch("nrechits", &nrechits, "nrechits/I");
+  rechitTree.Branch("rawChannel", vecRawChannel);
+  rechitTree.Branch("digiStrip", vecDigiStrip);
   rechitTree.Branch("rechitChamber", &vecRechitChamber);
   rechitTree.Branch("rechitEta", &vecRechitEta);
   rechitTree.Branch("rechitX", &vecRechitX);
@@ -140,7 +143,7 @@ int main (int argc, char** argv) {
 
   int nentries = digiTree->GetEntries();
   std::cout << nentries << " total events" <<  std::endl;
-  if (max_events>0) {
+  if (max_events>=0) {
     std::cout << "Processing " << nentries << " events" << std::endl;
     nentries = max_events;
   }
@@ -148,7 +151,7 @@ int main (int argc, char** argv) {
 
   signal(SIGINT, interruptHandler);
   for (int nevt=0; (!isInterrupted) && digiTree->LoadTree(nevt)>=0; ++nevt) {
-    if ((max_events>0) && (nevt>max_events)) break;
+    if ((max_events>=0) && (nevt>=max_events)) break;
     
     if (verbose) std::cout << "Event " << nevt << "/" << nentries << std::endl;
     else bar.update();
@@ -200,6 +203,10 @@ int main (int argc, char** argv) {
         // for large chamber, build 1D rechits:
         int chamber = clustersInEvent[icluster].getChamber();
         //rechit = Rechit(chamber, 0, clustersInEvent[icluster]);
+        if (verbose) {
+            std::cout << "  Chamber " << chamber;
+            std::cout << " eta=" << clustersInEvent[icluster].getEta();
+        }
         if (chamber==4) rechit = detectorGe21.createRechit(clustersInEvent[icluster]);
         else if (chamber==5) rechit = detectorMe0Blank.createRechit(clustersInEvent[icluster]);
         else if (chamber==6) rechit = detectorMe0Random.createRechit(clustersInEvent[icluster]);
@@ -211,11 +218,9 @@ int main (int argc, char** argv) {
         vecRechitClusterSize.push_back(rechit.getClusterSize());
         nrechits++;
         if (verbose) {
-            std::cout << "  Chamber " << chamber;
-            std::cout << " eta=" << clustersInEvent[icluster].getEta();
             std::cout << " local (" << rechit.getCenter() << ",";
             std::cout << rechit.getY() << ")" << std::endl;
-          }
+        }
       } else {
         // for tracker, build 2D rechits:
         chamber1 = clustersInEvent[icluster].getChamber();

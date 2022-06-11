@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("ifile", type=pathlib.Path, help="Input file")

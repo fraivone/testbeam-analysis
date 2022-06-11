@@ -82,7 +82,9 @@ configure_file(mapping/may2022Frengo/chamber_mapping.csv mapping/may2022Frengo/c
 configure_file(analysis/residuals.py analysis/residuals.py COPYONLY)
 configure_file(analysis/occupancy.py analysis/occupancy.py COPYONLY)
 configure_file(analysis/ge21.py analysis/ge21.py COPYONLY)
+configure_file(analysis/strips.py analysis/strips.py COPYONLY)
 configure_file(analysis/horns.py analysis/horns.py COPYONLY)
+configure_file(analysis/occupancy.py analysis/occupancy.py COPYONLY)
 configure_file(analysis/scan.py analysis/scan.py COPYONLY)
 configure_file(analysis/scans/efficiency.py analysis/scans/efficiency.py COPYONLY)
 configure_file(analysis/track_angles.py analysis/track_angles.py COPYONLY)
@@ -90,9 +92,12 @@ configure_file(analysis/track_angles.py analysis/track_angles.py COPYONLY)
 configure_file(analysis/calibration/latency.py analysis/calibration/latency.py COPYONLY)
 configure_file(analysis/calibration/threshold.py analysis/calibration/threshold.py COPYONLY)
 
-configure_file(scripts/angles.sh scripts/angles.sh COPYONLY)
+configure_file(scripts/alignment/angles.sh scripts/alignment/angles.sh COPYONLY)
+configure_file(scripts/alignment/translation.sh scripts/alignment/translation.sh COPYONLY)
 configure_file(scripts/scan.sh scripts/scan.sh COPYONLY)
-configure_file(scripts/angles.py scripts/angles.py COPYONLY)
+
+configure_file(analysis/utils/get_corrections.py analysis/utils/get_corrections.py COPYONLY)
+configure_file(analysis/utils/plot_alignment.py analysis/utils/plot_alignment.py COPYONLY)
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX

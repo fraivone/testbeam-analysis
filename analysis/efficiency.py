@@ -111,7 +111,7 @@ def main():
 
             """ Plot 2D efficiency map: """
             print("Calculating efficiency map...")
-            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_fig, eff_ax = plt.figure(figsize=(12,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
             matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
             total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
@@ -123,6 +123,8 @@ def main():
             centers_x = 0.5*(matched_bins_x[1:]+matched_bins_x[:-1])
             centers_y = 0.5*(matched_bins_y[1:]+matched_bins_y[:-1])
             print(efficiency)
+            average_efficiency = efficiency.flatten().mean()
+            print("Average efficiency", efficiency.flatten().mean())
             
             print("Plotting efficiency map...")
             img = eff_ax.imshow(
@@ -130,23 +132,23 @@ def main():
                 extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
                 origin="lower"
             )
-            eff_ax.set_xlabel("x (mm)")
-            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_xlabel("Extrapolated x (mm)")
+            eff_ax.set_ylabel("Extrapolated y (mm)")
             eff_ax.set_title(
-                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                r"$\bf{CMS}\,\,\it{Preliminary}$",
                 color="black", weight="normal", loc="left"
             )
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
             img.set_clim(.85, 1.)
             eff_fig.tight_layout()
-            eff_ax.text(.85, 1.01, "GE2/1", transform=eff_ax.transAxes)
+            eff_ax.text(1.0, 1.01, "GE2/1 H4 test beam", transform=eff_ax.transAxes, ha="right", weight="bold")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21.png"))
 
             
             """ Plot efficiency profile in 1D vs y position """
             print("Calculating 1D efficiency profile...")
-            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_fig, eff_ax = plt.figure(figsize=(11,9)), plt.axes()
             # matched_histogram, matched_bins_y = np.histogram(matched_y, bins=500)
             # total_histogram, total_bins_y = np.histogram(prophits_y, bins=500)
             # efficiency_1d = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
@@ -166,44 +168,49 @@ def main():
             params, cov = scipy.optimize.curve_fit(
                 fit_function, centers_y, efficiency_1d, p0=params
             )
+            perr = np.sqrt(np.diag(cov))
             x = np.linspace(centers_y[0], centers_y[-1], 1000)
             efficiency_interp = fit_function(x, *params)
             eff_ax.plot(x, efficiency_interp, color="red")
             eff_ax.set_xlim(-50, 50)
             eff_ax.set_ylim(0.0, 1.1)
             m, s, k = params[0:4], params[4:8], params[8:12]
+            err_m, err_s, err_k = perr[0:4], perr[4:8], perr[8:12]
             print("means", m, "\nsigma", s, "\nconstant", k)
             for i in range(4):
                 eff_ax.text(
-                    m[i]-1, fit_function(m[i], *params)-0.05,
-                    f"$\sigma$ {s[i]*1e3:1.1f} µm", size=15, rotation=60
+                    m[i], fit_function(m[i], *params)-0.1,
+                    f"$\sigma$ = {s[i]*1e3:1.0f} $\pm$ {err_s[i]*1e3:1.0f} µm", size=15, rotation=30, ha="center"
                 )
                 #eff_ax.text(m[i]-7, 1-2.2*k[i], f"$\sigma$ = {s[i]*1e3:1.1f} µm", size=15)
 
-            below_95 = efficiency_interp[efficiency_interp<0.95]
-            below_95_x = x[efficiency_interp<0.95]
-            print(below_95)
-            below_95_index = np.argpartition(below_95, 8)[-8:]
-            below_95_positions = np.sort(below_95_x[below_95_index])
-            print(below_95_index)
-            print(below_95_positions)
-            print("Below 95:", below_95_positions)
-            below_95_widths = below_95_positions[1::2]-below_95_positions[::2]
-            print(below_95_widths)
-            eff_ax.plot(x, 0.95+np.zeros(x.size), "-.", color="blue")
+            below_97 = efficiency_interp[efficiency_interp<0.97]
+            below_97_x = x[efficiency_interp<0.97]
+            print(below_97)
+            below_97_index = np.argpartition(below_97, 8)[-8:]
+            below_97_positions = np.sort(below_97_x[below_97_index])
+            print(below_97_index)
+            print(below_97_positions)
+            print("Below 97:", below_97_positions)
+            below_97_widths = below_97_positions[1::2]-below_97_positions[::2]
+            print(below_97_widths)
+            #eff_ax.plot(x, 0.97+np.zeros(x.size), "-.", color="blue")
+            #eff_ax.plot(x, average_efficiency+np.zeros(x.size), "-.", color="blue")
             for i in range(4):
                 eff_ax.text(
-                    m[i]-1, fit_function(m[i], *params)-0.15,
-                    f"{below_95_widths[i]*1e3:1.1f} µm at 95%", size=15, rotation=60
+                    m[i]-1, fit_function(m[i], *params)-0.25,
+                    #f"{below_97_widths[i]*1e3:1.1f} µm at 97%",
+                    " ",
+                    size=15, rotation=60
                 )
 
-            eff_ax.set_xlabel("Position y (mm)")
+            eff_ax.set_xlabel("Extrapolated y (mm)")
             eff_ax.set_ylabel("Efficiency")
             eff_ax.set_title(
-                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                r"$\bf{CMS}\,\,\it{Preliminary}$",
                 color='black', weight='normal', loc="left"
             )
-            eff_ax.text(.87, 1.01, "GE2/1", transform=eff_ax.transAxes)
+            eff_ax.text(1., 1., "GE2/1 H4 test beam", transform=eff_ax.transAxes, ha="right", va="bottom", weight="bold")
             eff_fig.tight_layout()
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "ge21_1d.png"))
@@ -231,8 +238,8 @@ def main():
                 eff_min = ak.min(eff_slice)
                 y_min = centers_y[eff_slice==eff_min] # where efficiency minimum is
                 min_positions.append(y_min[0])
-            slices_ax.set_xlabel("y (mm)")
-            slices_ax.set_ylabel("x (mm)")
+            slices_ax.set_xlabel("Extrapolated y (mm)")
+            slices_ax.set_ylabel("Extrapolated x (mm)")
             slices_ax.set_zlabel("Efficiency")
             slices_fig.savefig(os.path.join(args.odir, "ge21_slices.png"))
 
@@ -255,7 +262,7 @@ def main():
                 bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
             )
             rotation_ax.text(.87, 1.01, "GE2/1", transform=rotation_ax.transAxes)
-            rotation_ax.set_xlabel("Position x (mm)")
+            rotation_ax.set_xlabel("Extrapolated x (mm)")
             rotation_ax.set_ylabel("Displacement (mm)")
             rotation_fig.savefig(os.path.join(args.odir, "ge21_rotation.png"))
             
@@ -302,7 +309,7 @@ def main():
             matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
             print("Calculating efficiency map...")
-            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_fig, eff_ax = plt.figure(figsize=(12,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
             matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
             total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
@@ -317,6 +324,8 @@ def main():
             efficiency = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
 
             print(ak.count(efficiency), efficiency)
+            average_efficiency = efficiency.flatten().mean()
+            print(efficiency.flatten().mean())
             
             print("Plotting efficiency map...")
             img = eff_ax.imshow(
@@ -324,10 +333,10 @@ def main():
                 extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
                 origin="lower"
             )
-            eff_ax.set_xlabel("x (mm)")
-            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_xlabel("Extrapolated x (mm)")
+            eff_ax.set_ylabel("Extrapolated y (mm)")
             eff_ax.set_title(
-                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                r"$\bf{CMS}\,\,\it{Preliminary}$",
                 color='black', weight='normal', loc="left"
             )
             # cax = eff_fig.add_axes([
@@ -338,7 +347,7 @@ def main():
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
             img.set_clim(.85, 1.)
             eff_fig.tight_layout()
-            eff_ax.text(.85, 1.01, "ME0", transform=eff_ax.transAxes)
+            eff_ax.text(1., 1., "ME0 H4 test beam", transform=eff_ax.transAxes, ha="right", va="bottom", weight="bold")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "me0.png"))
 
@@ -361,13 +370,14 @@ def main():
             #efficiency_slices = efficiency_slices[mask_x]
 
             # plot each slice:
-            slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(10, 8*(npoints_y)))
+            #slices_fig, slices_axs = plt.subplots(nrows=npoints_y, ncols=1, figsize=(9, 8*(npoints_y)))
             for i_slice,(slice_y,eff_slice) in enumerate(zip(slices_y, efficiency_slices)):
                 # plot and fit with ten gaussians:
+                slices_fig, slices_axs = plt.figure(figsize=(12,10)), plt.axes()
                 eff_slice = eff_slice[mask_x]
                 # print(centers_x[mask_x], mask_x, eff_slice)
                 # print(ak.count(centers_x, axis=0), ak.count(mask_x, axis=0), ak.count(eff_slice, axis=0))
-                slices_axs[i_slice].plot(centers_x[mask_x], eff_slice, "-.k")
+                slices_axs.plot(centers_x[mask_x], eff_slice, ".k")
 
                 print(f"Fitting efficiency for y={slice_y:1.2f} mm")          
                 params = [
@@ -380,45 +390,52 @@ def main():
                     params, cov = scipy.optimize.curve_fit(
                         fit_function, centers_x[mask_x], eff_slice, p0=params
                     )
+                    perr = np.sqrt(np.diag(cov))
+
                 except RuntimeError: print("Skipping, fit failed...")
                 x = np.linspace(centers_x[mask_x][0], centers_x[mask_x][-1], 1000000)
                 efficiency_interp = fit_function(x, *params)
-                slices_axs[i_slice].plot(x, efficiency_interp, color="red")
+                slices_axs.plot(x, efficiency_interp, color="red")
 
                 m, s, k = params[0:8], params[8:16], params[16:24]
+                err_m, err_s, err_k = perr[0:8], perr[8:16], perr[16:24]
                 print("means", m, "\nsigma", s, "\nconstant", k)
-                slices_axs[i_slice].plot(x, 0.95+np.zeros(x.size), "-.", color="blue")
+                #slices_axs.plot(x, average_efficiency+np.zeros(x.size), ".-", color="blue")
                 for i in range(8):
-                    slices_axs[i_slice].text(
-                        m[i]-1, fit_function(m[i], *params)-0.15,
-                        f"{s[i]*1e3:1.1f} µm $\sigma$", size=14, rotation=60
+                    slices_axs.text(
+                        m[i], fit_function(m[i], *params)-0.1,
+                        f"$\sigma$ = {s[i]*1e3:1.0f} $\pm$ {err_s[i]*1e3:1.0f} µm", size=14, rotation=30, ha="center"
                     )
-                    width_95 = 4*s[i]
-                    # slices_axs[i_slice].plot(m[i]-0.5*width_95, fit_function(m[i]-0.5*width_95, *params), "o", markersize=5, color="blue")
-                    # slices_axs[i_slice].plot(m[i]+0.5*width_95, fit_function(m[i]+0.5*width_95, *params), "o", markersize=5, color="blue")
-                    slices_axs[i_slice].text(
+                    width_97 = 4*s[i]
+                    #width_97 = 2 * s[i] * np.sqrt( -2 * np.log(0.3 * s[i] * np.sqrt(2*np.pi)/k[i]) )
+                    # slices_axs[i_slice].plot(m[i]-0.5*width_97, fit_function(m[i]-0.5*width_97, *params), "o", markersize=5, color="blue")
+                    # slices_axs[i_slice].plot(m[i]+0.5*width_97, fit_function(m[i]+0.5*width_97, *params), "o", markersize=5, color="blue")
+                    slices_axs.text(
                         m[i]-1, fit_function(m[i], *params)-0.25,
-                        f"{width_95*1e3:1.1f} µm at 95%",
+                        " ",
+                        #f"{width_97*1e3:1.1f} µm at 97%",
                         size=14, rotation=60, color="blue"
                     )
 
-                # below_95 = efficiency_interp[efficiency_interp<0.95]
-                # below_95_x = x[efficiency_interp<0.95]
-                # print(below_95)
-                # below_95_index = np.argpartition(below_95, 16)[-16:]
-                # below_95_positions = np.sort(below_95_x[below_95_index])
-                # print(below_95_index)
-                # print("Below 95:", below_95_positions)
-                # print("Efficiency:", fit_function(below_95_positions, *params))
-                # below_95_widths = below_95_positions[1::2]-below_95_positions[::2]
-                # print(below_95_widths)
+                # below_97 = efficiency_interp[efficiency_interp<0.97]
+                # below_97_x = x[efficiency_interp<0.97]
+                # print(below_97)
+                # below_97_index = np.argpartition(below_97, 16)[-16:]
+                # below_97_positions = np.sort(below_97_x[below_95_index])
+                # print(below_97_index)
+                # print("Below 97:", below_97_positions)
+                # print("Efficiency:", fit_function(below_97_positions, *params))
+                # below_97_widths = below_97_positions[1::2]-below_95_positions[::2]
+                # print(below_97_widths)
 
-                slices_axs[i_slice].set_xlim(-40, 30)
-                slices_axs[i_slice].set_ylim(0.0, 1.1)
-                slices_axs[i_slice].set_xlabel("x (mm)")
-                slices_axs[i_slice].set_ylabel("Efficiency")
-                slices_axs[i_slice].set_title(f"y = {slice_y:1.2f} mm")
-
+                slices_axs.set_xlim(-40, 30)
+                slices_axs.set_ylim(0.0, 1.1)
+                slices_axs.set_xlabel("Extrapolated x (mm)")
+                slices_axs.set_ylabel("Efficiency")
+                slices_axs.text(1.0, 1.0, "ME0 H4 test beam", transform=slices_axs.transAxes, ha="right", va="bottom", weight="bold")
+                hep.cms.text(text="Preliminary", ax=slices_axs)
+                #slices_axs[i_slice].set_title(f"y = {slice_y:1.2f} mm")
+                slices_fig.savefig(os.path.join(args.odir, f"me0_slices_{i_slice}.png"))
             slices_fig.tight_layout()
             slices_fig.savefig(os.path.join(args.odir, "me0_slices.png"))
 
@@ -455,7 +472,7 @@ def main():
                     chi2_position_axs[i][j].set_xlabel("χ$^2_" + coord_chi2 + "$")
                     chi2_position_axs[i][j].set_ylabel("propagated " + coord_prop + " (mm)")
             chi2_position_fig.tight_layout()
-            chi2_position_fig.savefig(args.odir/"me0_chi2.png")
+            chi2_position_fig.savefig(args.odir/"20x10_chi2.png")
 
             print("Matching...")
             mask_out = (abs(prophits_x)<40.)&(abs(prophits_y)<40.)
@@ -465,7 +482,7 @@ def main():
             matched_x, matched_y = prophits_x[matches], prophits_y[matches]
 
             print("Calculating efficiency map...")
-            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_fig, eff_ax = plt.figure(figsize=(12,9)), plt.axes()
             eff_range = [[min(prophits_x), max(prophits_x)], [min(prophits_y), max(prophits_y)]]
             matched_histogram, matched_bins_x, matched_bins_y = np.histogram2d(matched_x, matched_y, bins=args.bins, range=eff_range)
             total_histogram, total_bins_x, total_bins_y = np.histogram2d(prophits_x, prophits_y, bins=args.bins, range=eff_range)
@@ -486,16 +503,16 @@ def main():
                 extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1]],
                 origin="lower"
             )
-            eff_ax.set_xlabel("x (mm)")
-            eff_ax.set_ylabel("y (mm)")
+            eff_ax.set_xlabel("Extrapolated x (mm)")
+            eff_ax.set_ylabel("Extrapolated y (mm)")
             eff_ax.set_title(
-                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                r"$\bf{CMS}\,\,\it{Preliminary}$",
                 color='black', weight='normal', loc="left"
             )
             eff_fig.colorbar(img, ax=eff_ax, label="Efficiency")
             img.set_clim(.85, 1.)
             eff_fig.tight_layout()
-            eff_ax.text(.83, 1.01, "20x10", transform=eff_ax.transAxes)
+            eff_ax.text(1., 1., "$20\\times 10\,cm^2$", transform=eff_ax.transAxes, ha="right", va="bottom", weight="bold")
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "20x10.png"))
 
@@ -526,8 +543,8 @@ def main():
                 x_min = centers_x[eff_slice==eff_min] # where efficiency minimum is
                 min_positions.append(x_min[0])
                 print(x_min, eff_min)
-            slices_ax.set_xlabel("x (mm)")
-            slices_ax.set_ylabel("y (mm)")
+            slices_ax.set_xlabel("Extrapolated x (mm)")
+            slices_ax.set_ylabel("Extrapolated y (mm)")
             slices_ax.set_zlabel("Efficiency")
             slices_fig.savefig(os.path.join(args.odir, "20x10_slices.png"))
 
@@ -550,14 +567,14 @@ def main():
                 bbox=dict(boxstyle="square, pad=0.5", ec="black", fc="none")
             )
             rotation_ax.text(.87, 1.01, "20x10", transform=rotation_ax.transAxes)
-            rotation_ax.set_xlabel("Position y (mm)")
+            rotation_ax.set_xlabel("Extrapolated y (mm)")
             rotation_ax.set_ylabel("Displacement (mm)")
             rotation_fig.savefig(os.path.join(args.odir, "20x10_rotation.png"))
 
 
             """ Plot efficiency profile in 1D vs y position """
             print("Calculating 1D efficiency profile...")
-            eff_fig, eff_ax = plt.figure(figsize=(10,9)), plt.axes()
+            eff_fig, eff_ax = plt.figure(figsize=(11,9)), plt.axes()
             # matched_histogram, matched_bins_y = np.histogram(matched_y, bins=500)
             # total_histogram, total_bins_y = np.histogram(prophits_y, bins=500)
             # efficiency_1d = np.divide(matched_histogram, total_histogram, where=(total_histogram!=0))
@@ -573,20 +590,22 @@ def main():
             params, cov = scipy.optimize.curve_fit(
                 fit_function, centers_x, efficiency_1d, p0=params
             )
+            perr = np.sqrt(np.diag(cov))
             x = np.linspace(centers_x[0], centers_x[-1], 1000)
             eff_ax.plot(x, fit_function(x, *params), color="red")
             eff_ax.set_ylim(0.9, 1.01)
             m, s, k = params
+            err_m, err_s, err_k = perr
             print("mean", m, "\nsigma", s, "\nconstant", k)
-            eff_ax.text(m-5.5, 1-1.2*k, f"$\sigma$ = {s*1e3:1.1f} µm", size=15)
+            eff_ax.text(m, 1-1.2*k, f"$\sigma$ = {s*1e3:1.0f} $\pm$ {err_s*1e3:1.0f} µm", size=15, ha="center")
 
-            eff_ax.set_xlabel("Position x (mm)")
+            eff_ax.set_xlabel("Extrapolated x (mm)")
             eff_ax.set_ylabel("Efficiency")
             eff_ax.set_title(
-                r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                r"$\bf{CMS}\,\,\it{Preliminary}$",
                 color='black', weight='normal', loc="left"
             )
-            eff_ax.text(.87, 1.01, "20x10", transform=eff_ax.transAxes)
+            eff_ax.text(1., 1., "$20\\times 10\,cm^2$ H4 test beam", transform=eff_ax.transAxes, ha="right", va="bottom", weight="bold")
             eff_fig.tight_layout()
             print("Saving result...")
             eff_fig.savefig(os.path.join(args.odir, "20x10_1d.png"))
@@ -653,10 +672,10 @@ def main():
                     extent=[matched_bins_x[0], matched_bins_x[-1], matched_bins_y[0], matched_bins_y[-1], ],
                     origin="lower"
                 )
-                eff_axs[tested_chamber].set_xlabel("x (mm)")
-                eff_axs[tested_chamber].set_ylabel("y (mm)")
+                eff_axs[tested_chamber].set_xlabel("Extrapolated x (mm)")
+                eff_axs[tested_chamber].set_ylabel("Extrapolated y (mm)")
                 eff_axs[tested_chamber].set_title(
-                    r"$\bf{CMS}\,\,\it{Muon\,\,R&D}$",
+                    r"$\bf{CMS}\,\,\it{Preliminary}$",
                     color='black', weight='normal', loc="left"
                 )
                 eff_fig.colorbar(img, ax=eff_axs[tested_chamber], label="Efficiency")

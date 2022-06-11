@@ -12,6 +12,11 @@ DetectorLarge::DetectorLarge(int oh, int chamber, double baseNarrow, double base
     fNumberStrips = nStrips;
     fEtaHeight = height/nEta;
 
+    std::cout << "-----------------------------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "Initializing large chamber " << chamber << " with oh " << oh << std::endl;
+    std::cout << "Narrow base " << baseNarrow << ", wide base " << baseWide << ", height " << height << std::endl;
+    std::cout << "Eta partitions " << nEta << ", strips " << nStrips << ", eta partition height " << fEtaHeight << std::endl;
+
     fPartitionYs.reserve(fNumberPartitions);
     fPartitionYTops.reserve(fNumberPartitions);
     fPartitionWidths.reserve(fNumberPartitions);
@@ -23,8 +28,14 @@ DetectorLarge::DetectorLarge(int oh, int chamber, double baseNarrow, double base
         fPartitionWidths[eta] = fBaseNarrow + fPartitionYs[eta]*(fBaseWide-fBaseNarrow)/fHeight;
         fPartitionStripPitches[eta] = fPartitionWidths[eta] / fNumberStrips;
         fPartitionStripPitchesSqrt12[eta] = fPartitionStripPitches[eta] * 0.288675;
+
+        std::cout << "    eta partition " << eta+1;
+        std::cout << ", middle y " << fPartitionYs[eta] << ", width " << fPartitionWidths[eta];
+        std::cout << ", strip pitch " << fPartitionStripPitches[eta];
+        std::cout << ", expected resolution " << fPartitionStripPitchesSqrt12[eta] << std::endl;
     }
     fOriginY = baseNarrow*height/(baseWide-baseNarrow);
+    std::cout << std::endl;
 }
 
 double DetectorLarge::getY(int eta) {
@@ -50,7 +61,7 @@ double DetectorLarge::getStripPitchSqrt12(int eta) {
 Rechit DetectorLarge::createRechit(Cluster cluster) {
     Rechit rechit(
         fChamber,
-        -0.5*getWidth(cluster.getEta()) + getStripPitch(cluster.getEta())*cluster.getCenter(),
+        -0.5*getWidth(cluster.getEta()) + getStripPitch(cluster.getEta()) * cluster.getCenter(),
         cluster.getSize() * getStripPitchSqrt12(cluster.getEta()),
         cluster.getSize()
     );
