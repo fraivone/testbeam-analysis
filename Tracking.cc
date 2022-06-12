@@ -46,9 +46,9 @@ int main (int argc, char** argv) {
     
     int max_events = -1;
     bool verbose = false;
-    double trackerAngles[4] = { .01158492576947, .00388093867016,  -.00190211740939, -.00971001194466 };
-    double trackerCorrectionsX[4] = { 3.13927413131933, .83829925573446, -.67253911147153, .13453757696272 };
-    double trackerCorrectionsY[4] = { .72503599470208 -.01562296563673 -.00177620835277 -.02208594949893 };
+    double trackerAngles[4] = { 0, 0, 0, 0 };//.01158492576947, .00388093867016,  -.00190211740939, -.00971001194466 };
+    double trackerCorrectionsX[4] = { -.68888635583799, .01851981215192, -.01738387261102, -.01552764211394 };
+    double trackerCorrectionsY[4] = { -3.51064702409602, -1.08306067022753, .57358265976411, -.10031691598836 };
     for (int iarg=0; iarg<argc; iarg++) {
       std::string arg = argv[iarg];
       if (arg=="--verbose") verbose = true;
