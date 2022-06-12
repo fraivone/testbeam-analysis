@@ -49,6 +49,7 @@ def main():
     parser.add_argument("ifile", type=pathlib.Path, help="Input file")
     parser.add_argument("odir", type=pathlib.Path, help="Output directory")
     parser.add_argument("detector", type=str, help="Detector under test")
+    parser.add_argument("chamber", type=int, help="Chamber number")
     parser.add_argument("bins", type=int, help="Number of bins")
     parser.add_argument("-n", "--events", type=int, default=-1, help="Number of events to analyse")
     parser.add_argument("-v", "--verbose", action="store_true", help="Activate logging")
@@ -94,7 +95,7 @@ def main():
             track_x_chi2 = track_x_chi2[mask_chi2]
             track_y_chi2 = track_y_chi2[mask_chi2]
 
-            ge21_chamber = 4
+            ge21_chamber = args.chamber
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==ge21_chamber]), ak.flatten(prophits_y[prophit_chamber==ge21_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==ge21_chamber], rechits_y[rechit_chamber==ge21_chamber]
 
@@ -287,7 +288,7 @@ def main():
             track_x_chi2 = track_x_chi2[mask_chi2]
             track_y_chi2 = track_y_chi2[mask_chi2]
 
-            me0_chamber = 5
+            me0_chamber = args.chamber
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==me0_chamber]), ak.flatten(prophits_y[prophit_chamber==me0_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==me0_chamber], rechits_y[rechit_chamber==me0_chamber]
 
@@ -460,7 +461,7 @@ def main():
             track_x_chi2 = track_x_chi2[mask_chi2]
             track_y_chi2 = track_y_chi2[mask_chi2]
 
-            rectangular_chamber = 6
+            rectangular_chamber = args.chamber
             prophits_x, prophits_y = ak.flatten(prophits_x[prophit_chamber==rectangular_chamber]), ak.flatten(prophits_y[prophit_chamber==rectangular_chamber])
             rechits_x, rechits_y = rechits_x[rechit_chamber==rectangular_chamber], rechits_y[rechit_chamber==rectangular_chamber]
 
