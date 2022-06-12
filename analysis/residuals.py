@@ -99,7 +99,8 @@ def main():
         
         #rechits_x_error = track_tree["rechits2D_X_Error"].array(entry_stop=args.events)
         #rechits_y_error = track_tree["rechits2D_Y_Error"].array(entry_stop=args.events)
-        track_chi2 = track_tree["trackFitChi2"].array(entry_stop=args.events)
+        track_chi2_x = track_tree["tracks_X_chi2"].array(entry_stop=args.events)
+        track_chi2_y = track_tree["tracks_Y_chi2"].array(entry_stop=args.events)
         tracks_x_covariance = track_tree["tracks_X_covariance"].array(entry_stop=args.events)
         tracks_y_covariance = track_tree["tracks_Y_covariance"].array(entry_stop=args.events)
         cluster_size_x = track_tree["rechits2D_X_ClusterSize"].array(entry_stop=args.events)
@@ -115,7 +116,7 @@ def main():
         cluster_size_x, cluster_size_y = cluster_size_x[mask_4hit], cluster_size_y[mask_4hit]
         prophits_x_error, prophits_y_error = prophits_x_error[mask_4hit], prophits_y_error[mask_4hit]
         tracks_x_covariance, tracks_y_covariance = tracks_x_covariance[mask_4hit], tracks_y_covariance[mask_4hit]
-        track_chi2 = track_chi2[mask_4hit]
+        track_chi2_x, track_chi2_y = track_chi2_x[mask_4hit], track_chi2_y[mask_4hit]
  
         if args.verbose:
             print("Rechits x:", rechits_x, "length:", ak.count(rechits_x, axis=1))
@@ -155,7 +156,7 @@ def main():
             cluster_sizes = [cluster_size_x[:,tested_chamber], cluster_size_y[:,tested_chamber]]
             tracks_covariance = [tracks_x_covariance[:,tested_chamber], tracks_y_covariance[:,tested_chamber]]
             properrs = prophits_x_error[:,tested_chamber], prophits_y_error[:,tested_chamber]
-            chi2 = track_chi2[:,tested_chamber]
+            chi2 = [track_chi2_x[:,tested_chamber], track_chi2_y[:,tested_chamber]]
 
             space_resolutions, err_space_resolutions = dict(), dict()
             cluster_size_cuts = list(range(2,10))
@@ -186,7 +187,7 @@ def main():
                     (-6.7, 6.7), 300,
                     residual_axs[idirection][tested_chamber],
                     "", f"Residual {direction} (mm)",
-                    pulls=False, color=["red", "blue"][idirection]
+                    color=["red", "blue"][idirection]
                 )
                 residual_axs[idirection][tested_chamber].text(
                     0.05, 0.9,
@@ -200,16 +201,14 @@ def main():
                     transform=residual_axs[idirection][tested_chamber].transAxes,
                     va="top", ha="right"
                 )
-                translation[tested_chamber][idirection] = correction
-                err_translation[tested_chamber][idirection] = err_correction
                 hep.cms.text(text="Preliminary", ax=residual_axs[idirection][tested_chamber])
 
                 translation[idirection][tested_chamber] = correction
                 err_translation[idirection][tested_chamber] = err_correction
  
                 chi2_axs[idirection][tested_chamber].hist2d(
-                    chi2, 1e3*tracks_covariance[idirection],
-                    range=((0,1), (0,0.1)), bins=50
+                    chi2[idirection], 1e3*tracks_covariance[idirection],
+                    bins=50, range=((0,1), (0,0.1)),
                 )
                 #chi2_axs[idirection][tested_chamber].hist(1e3*tracks_covariance[idirection], bins=50)
                 #chi2_axs[idirection][tested_chamber].set_yscale("log")
