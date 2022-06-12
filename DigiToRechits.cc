@@ -57,7 +57,7 @@ int main (int argc, char** argv) {
   };
   DetectorLarge detectorGe21(0, 4, 488.8, 628.8, 390.9, 4, 384);
   DetectorLarge detectorMe0Blank(0, 5, 127.584, 434.985, 868.18, 8, 384);
-  DetectorLarge detectorMe0Random(0, 6, 127.584, 434.985, 868.18, 8, 384);
+  DetectorLarge detectorMe0Random(1, 6, 127.584, 434.985, 868.18, 8, 384);
 
   // digi variables
   int nhits;
