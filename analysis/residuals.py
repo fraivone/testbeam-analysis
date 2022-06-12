@@ -96,8 +96,7 @@ def main():
         rechits_y = track_tree["rechits2D_Y"].array(entry_stop=args.events)
         prophits_x = track_tree["prophits2D_X"].array(entry_stop=args.events)
         prophits_y = track_tree["prophits2D_Y"].array(entry_stop=args.events)
-        residuals_x, residuals_y = prophits_x-rechits_x, prophits_y-rechits_y
-
+        
         #rechits_x_error = track_tree["rechits2D_X_Error"].array(entry_stop=args.events)
         #rechits_y_error = track_tree["rechits2D_Y_Error"].array(entry_stop=args.events)
         track_chi2 = track_tree["trackFitChi2"].array(entry_stop=args.events)
@@ -113,12 +112,17 @@ def main():
         rechits_chamber = rechits_chamber[mask_4hit]
         rechits_x, rechits_y = rechits_x[mask_4hit], rechits_y[mask_4hit]
         prophits_x, prophits_y = prophits_x[mask_4hit], prophits_y[mask_4hit]
-        residuals_x, residuals_y = residuals_x[mask_4hit], residuals_y[mask_4hit]
         cluster_size_x, cluster_size_y = cluster_size_x[mask_4hit], cluster_size_y[mask_4hit]
         prophits_x_error, prophits_y_error = prophits_x_error[mask_4hit], prophits_y_error[mask_4hit]
         tracks_x_covariance, tracks_y_covariance = tracks_x_covariance[mask_4hit], tracks_y_covariance[mask_4hit]
         track_chi2 = track_chi2[mask_4hit]
-        
+ 
+        if args.verbose:
+            print("Rechits x:", rechits_x, "length:", ak.count(rechits_x, axis=1))
+            print("Prophits y:", prophits_x, "length:", ak.count(prophits_x, axis=1))
+        residuals_x = prophits_x - rechits_x
+        residuals_y = prophits_y - rechits_y
+       
         # Preparing figures:
         print("Starting plotting...")
         directions = ["x", "y"]
@@ -135,16 +139,9 @@ def main():
         chi2_fig, chi2_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
         properr_position_fig, properr_position_axs = plt.subplots(nrows=2, ncols=4, figsize=(10*4,9*2))
 
-<<<<<<< HEAD
-        angles, err_angles = np.ndarray((4,2)), np.ndarray((4,2))
-        translation, err_translation = np.ndarray((4,2)), np.ndarray((4,2))
-        for tested_chamber in range(4):
-            print(f"Processing chamber {tested_chamber}...")
-=======
         angles, err_angles = np.ndarray((2,4)), np.ndarray((2,4))
         translation, err_translation = np.ndarray((2,4)), np.ndarray((2,4))
         for tested_chamber in tqdm(range(4)):
->>>>>>> feature/may2022
             rechits = [rechits_x[:,tested_chamber], rechits_y[:,tested_chamber]]
             # apply angular correction to rechits:
             # rechits_corrected = [
@@ -401,16 +398,6 @@ def main():
 
         # combine x and y angle corrections, then save:
         corrections = {
-<<<<<<< HEAD
-            "translation": translation,
-            "error_translation": err_translation,
-            "angle": np.sum(angles/err_angles**2, axis=1)/np.sum(1/err_angles**2, axis=1),
-            "error_angle": np.sqrt(1/np.sum(1/err_angles**2, axis=1))
-        }
-        print(corrections)
-        pd.DataFrame.from_dict(corrections).T.to_csv(
-            os.path.join(args.odir, "corrections.txt"), sep=" "
-=======
             "translation_x": translation[0], "translation_y": translation[1],
             "err_translation_x": err_translation[0], "err_translation_y": err_translation[1],
             "angle": np.sum(angles.T/err_angles.T**2, axis=1)/np.sum(1/err_angles.T**2, axis=1),
@@ -418,9 +405,6 @@ def main():
         }
         corrections_df = pd.DataFrame.from_dict(corrections)
         print("Corrections:\n", corrections_df)
-        pd.DataFrame.from_dict(corrections).to_csv(
-            os.path.join(args.odir, "corrections.txt"), sep=";"
->>>>>>> feature/may2022
-        )
+        pd.DataFrame.from_dict(corrections).to_csv(args.odir / "corrections.txt", sep=";")
 
 if __name__=='__main__': main()
