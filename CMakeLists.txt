@@ -60,12 +60,19 @@ target_link_libraries(Alignment ${ROOT_LIBRARIES})
 configure_file(mapping/oct2021/tracker_mapping.csv mapping/oct2021/tracker_mapping.csv COPYONLY)
 configure_file(mapping/oct2021/ge21_mapping.csv mapping/oct2021/ge21_mapping.csv COPYONLY)
 configure_file(mapping/oct2021/chamber_mapping.csv mapping/oct2021/chamber_mapping.csv COPYONLY)
+configure_file(mapping/IntegrationStand/tracker_mapping.csv mapping/IntegrationStand/tracker_mapping.csv COPYONLY)
+configure_file(mapping/IntegrationStand/ge21_mapping.csv mapping/IntegrationStand/ge21_mapping.csv COPYONLY)
+configure_file(mapping/IntegrationStand/chamber_mapping.csv mapping/IntegrationStand/chamber_mapping.csv COPYONLY)
+configure_file(mapping/nov2021/me0_mapping.csv mapping/IntegrationStand/me0_mapping.csv COPYONLY)
+configure_file(mapping/nov2021/20x10_mapping.csv mapping/IntegrationStand/20x10_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/me0_mapping.csv mapping/oct2021/me0_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/20x10_mapping.csv mapping/oct2021/20x10_mapping.csv COPYONLY)
-
 configure_file(mapping/nov2021/tracker_mapping.csv mapping/nov2021/tracker_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/ge21_mapping.csv mapping/nov2021/ge21_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/me0_mapping.csv mapping/nov2021/me0_mapping.csv COPYONLY)
+
+
+
 configure_file(mapping/nov2021/20x10_mapping.csv mapping/nov2021/20x10_mapping.csv COPYONLY)
 configure_file(mapping/nov2021/chamber_mapping.csv mapping/nov2021/chamber_mapping.csv COPYONLY)
 
