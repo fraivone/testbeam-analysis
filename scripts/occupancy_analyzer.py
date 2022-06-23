@@ -76,7 +76,9 @@ def main():
 
 
     #Plotting latency with ROOT
-    latency_dict = {}
+    TStack_eta_dict = {}
+    occupancy_dict = {}
+    color = [ROOT.TColor.GetColorPalette(50*i) for i in range(4)]
 
     infile=ROOT.TFile(str(args.ifile),"READ")
     tree = infile.Get("outputtree")
@@ -88,53 +90,26 @@ def main():
     c1.Divide(nrows,ncols)
     c2.Divide(1,len(unique_etas))
     
-    for oh in unique_OHs:
-        for idx,v in enumerate(unique_VFATs):
-            hist_lat_name = "latScan_VFAT"+str(v)
-            latency_dict[v]=ROOT.TH1F(hist_lat_name,hist_lat_name,120,0,120)
-            latency_dict[v].GetXaxis().SetTitle("Latency (BX)")
-            latency_dict[v].GetYaxis().SetTitle("hits")
-                    
-            c1.cd(idx+1)
-            tree.Draw(f"latency >> {hist_lat_name}","VFAT=="+str(v))
-                    
+    for oh in unique_OHs:                    
+        for idx,eta in enumerate(unique_etas):
+            TStack_eta_dict[eta] = ROOT.THStack("Occu eta"+str(eta),"Occu eta"+str(eta))
+            for j,vfat in enumerate(eta_to_vfat[oh][eta]):
+                hist_occ_name = "occupancy_OH"+str(oh)+"_vfat"+str(vfat)
+                occupancy_dict[vfat]= ROOT.TH1F(hist_occ_name, hist_occ_name,400,0,400)
+                occupancy_dict[vfat].SetLineColor(color[j])
+                occupancy_dict[vfat].SetFillColor(color[j])
 
-    c1.Modified()
-    c1.Update()
+                tree.Draw(f"digiStrip >> {hist_occ_name}","VFAT=="+str(vfat),"goff") 
+                TStack_eta_dict[eta].Add(occupancy_dict[vfat])
 
-    c1.SaveAs(str(args.odir)+f"/OH{oh}_latency_"+timestamp+".png")
-    c1.SaveAs(str(args.odir)+f"/OH{oh}_latency_"+timestamp+".pdf")
 
-            # #Plotting latency with pyplot
-            # slot=7
-            # for oh in unique_OHs:
-            #     nvfats = len(unique_VFATs)
-            #     nrows = 3
-            #     ncols = int(np.ceil(nvfats/nrows))
-            #     latency_fig, latency_axs = plt.subplots(nrows, ncols, figsize=(9*ncols, 9*nrows))
-            #     latency_axs = latency_axs.flat
-            #     plt.figure(figsize=(20,20))
+            c2.cd(idx+1)
+            TStack_eta_dict[eta].Draw("nostack")
+            c2.cd(idx+1).BuildLegend(0.3,0.21,0.3,0.21,"","F")
 
-            #     for idx,vf in enumerate(unique_VFATs):
-            #         x_plot = []
-            #         y_plot = []
-
-            #         for lat in unique_latencies:
-            #             mask = (latencies==lat)&(VFATs==vf)
-            #             vfat_hits = len(ak.flatten(strips[mask]))
-            #             x_plot.append(lat)
-            #             y_plot.append(vfat_hits)
-            #         print(f"OH{oh} VFAT{vf} x = {x_plot} y = {y_plot}")
-            #         latency_axs[idx].hist(x_plot,bins=len(x_plot),weights=y_plot,color="black",alpha = 0.5)
-            #         latency_axs[idx].set_title("OH{} VFAT{}".format(oh,vf),fontweight="bold", size=30)
-            #         latency_axs[idx].set_xlabel("latency",fontsize=20)
-            #         latency_axs[idx].set_ylabel("hits",fontsize=20)
-            #         latency_fig.tight_layout()
-            #         latency_fig.savefig(str(args.odir)+f"/OH{oh}_latency_"+timestamp+".pdf")
-
-            # print(f"Save output in {args.odir}")
-
-                
-
+    c2.Modified()
+    c2.Update()
+    c2.SaveAs(str(args.odir)+f"/OH{oh}_occ_"+timestamp+".png")
+    c2.SaveAs(str(args.odir)+f"/OH{oh}_occ_"+timestamp+".pdf")
 
 if __name__=='__main__': main()
