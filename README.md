@@ -9,21 +9,14 @@ cmake3 ..
 make
 ```
 
-### Running the code
+### IntegrationStand
 
 Running the unpacker:
 ```bash
-RawToDigi raw_file.raw ferol digi.root [n_events]
+./RawToDigi /afs/cern.ch/user/f/fivone/public/data/run000000_ls0001_index00*.raw bla.root
 ```
 
-Local reconstruction:
+Latency Plot:
 ```bash
-DigiToRechits digi.raw rechits.root [n_events]
+python3 latency_analyzer.py /afs/cern.ch/user/f/fivone/Documents/Unpacker_2022/testbeam-analysis/build/bla.root /eos/user/f/fivone/www/IntegrationStand/GE21/  --verbose -n 8000
 ```
-
-Track reconstruction:
-```bash
-Tracking rechits.raw tracks.root [n_events]
-```
-
-Analysis: look at python scripts in the `analysis` folder.
