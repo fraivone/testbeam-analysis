@@ -72,46 +72,49 @@ class GEMUnpacker {
         //printf("%016llX\n", m_word);
       }
 
-      // m_AMC13Event = new AMC13Event();
-      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
-      if(verbose){
-      printf("CDFHeader %016llX\n", m_word);
-      printf("--------------------------------------\n");
-      printf("headerMarker1 = ");
-      PrintHEX2Binary( (m_word >> 60) & 0xf);
-      printf("\nEventType = ");
-      PrintHEX2Binary( (m_word >> 56) & 0xf);
-      printf("\nL1aID = %d\n", ((m_word >> 32) & 0xffffff) );
-      printf("bxID = %d\n", ((m_word >> 20) & 0xfff) );
-      printf("fedID = %d\n", ((m_word >> 8) & 0xfff) );
-      printf("--------------------------------------\n");
-      // Finish unpack of CDF
-      }
+      // Unpack AMC13 Header
+      if (isAMC13){
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+          if(verbose){
+              printf("CDFHeader %016llX\n", m_word);
+              printf("--------------------------------------\n");
+              printf("headerMarker1 = ");
+              PrintHEX2Binary( (m_word >> 60) & 0xf);
+              printf("\nEventType = ");
+              PrintHEX2Binary( (m_word >> 56) & 0xf);
+              printf("\nL1aID = %d\n", ((m_word >> 32) & 0xffffff) );
+              printf("bxID = %d\n", ((m_word >> 20) & 0xfff) );
+              printf("fedID = %d\n", ((m_word >> 8) & 0xfff) );
+              printf("--------------------------------------\n");
+              // Finish unpack of CDF
+          }
 
-      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
 
 
-      if(verbose){
-      printf("\n\nAMC13 Header %016llX\n", m_word);
-      printf("--------------------------------------\n");
-      printf("NumberAMCs = %d\n", ((m_word >> 52) & 0xf) );
-      printf("OrbitID = %d\n", ((m_word >> 4) & 0xffffffff) );
-      printf("headerMarker2 = %d\n", ((m_word >> 0) & 0xf) );
-      printf("--------------------------------------\n");
-      // Finish unpack AMC13 header
-      }
+          if(verbose){
+              printf("\n\nAMC13 Header %016llX\n", m_word);
+              printf("--------------------------------------\n");
+              printf("NumberAMCs = %d\n", ((m_word >> 52) & 0xf) );
+              printf("OrbitID = %d\n", ((m_word >> 4) & 0xffffffff) );
+              printf("headerMarker2 = %d\n", ((m_word >> 0) & 0xf) );
+              printf("--------------------------------------\n");
+              // Finish unpack AMC13 header
+          }
       
-      // Unpacking now the AMC13 block, to be looped over n of amc (here only 1 AMC)
-      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
-      
-      if(verbose){
-      printf("\n\nAMC13 Block %016llX\n", m_word);
-      printf("--------------------------------------\n");
-      printf("BlockSize = %d\n", ((m_word >> 32) & 0xffffff) );
-      printf("AMC ID = %d\n", ((m_word >> 16) & 0xf) );
-      printf("--------------------------------------\n");
-      // Print unpacked AMC13 block
-      }
+          // Unpacking now the AMC13 block, to be looped over n of amc (here only 1 AMC)
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+          
+          if(verbose){
+              printf("\n\nAMC13 Block %016llX\n", m_word);
+              printf("--------------------------------------\n");
+              printf("BlockSize = %d\n", ((m_word >> 32) & 0xffffff) );
+              printf("AMC ID = %d\n", ((m_word >> 16) & 0xf) );
+              printf("--------------------------------------\n");
+              // Print unpacked AMC13 block
+          }
+      }// Finish unpacking AMC13 Header
+
       int AMC_slot = (int)((m_word >> 16) & 0xf);
 
       //     m_AMC13Event->addAMCheader(m_word);
@@ -200,12 +203,11 @@ class GEMUnpacker {
                     std::cin.get();
                     return 0;}
             StripMapping *stripMapping = stripMappings.at(chamber);
-            eta = stripMapping->to_eta[vfatId];
 
             if (verbose) {
               std::cout << "        " << AMC_slot << "\t" << oh << "\t" << vfatId;
               std::cout << "\t" << m_amcEvent->Onum() << "\t" << m_amcEvent->BX() << "\t" << l1a;
-              std::cout << "\t" << eta << "\t" << chamber << std::endl;
+              std::cout << "\t" << chamber << std::endl;
             }
 
             direction = eta%2;
@@ -215,22 +217,26 @@ class GEMUnpacker {
                 vecVfat.push_back(vfatId);
                 vecOh.push_back(oh);
                 vecSlot.push_back(AMC_slot);
+                eta = stripMapping->to_eta[vfatId][i];
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
                 vecDigiStrip.push_back(stripMapping->to_strip[vfatId][i]);
                 nhits++;
+                hitsPerVFAT[vfatId]++;
               }
               if (m_vfatdata->msData() & (1LL << i)) {
                 vecCh.push_back(i+64);
                 vecVfat.push_back(vfatId);
                 vecOh.push_back(oh);
                 vecSlot.push_back(AMC_slot);
+                eta = stripMapping->to_eta[vfatId][i+64];
                 vecDigiEta.push_back(eta);
                 vecDigiChamber.push_back(chamber);
                 vecDigiDirection.push_back(direction);
                 vecDigiStrip.push_back(stripMapping->to_strip[vfatId][i+64]);
                 nhits++;
+                hitsPerVFAT[vfatId]++;
               }
             }
             delete m_vfatdata;
@@ -242,15 +248,19 @@ class GEMUnpacker {
       }
       std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
       m_amcEvent->setGEMeventTrailer(m_word);
+      // printf("PulseStretch = ");
+      // PrintHEX2Binary( (m_word >> 8));
+      // printf("\n");
       std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
-      //printf("AMC TRALIER\n");
-      //printf("%016llX\n", m_word);
       m_amcEvent->setAMCTrailer(m_word);
+      
 
-      // AMC13 Trailer
-      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
-      // CDF Trailer
-      std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+      // Unpack AMC13 Trailer
+      if(isAMC13){
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+          // CDF Trailer
+          std::fread(&m_word, sizeof(uint64_t), 1, m_files.at(slot));
+      }// Finish unpacking AMC13 trailer
 
       delete m_amcEvent;
 
@@ -276,6 +286,7 @@ class GEMUnpacker {
       outputtree.Branch("OH", &vecOh);
       outputtree.Branch("VFAT", &vecVfat);
       outputtree.Branch("CH", &vecCh);
+      outputtree.Branch("hitspervfat", hitsPerVFAT,"hitsPerVFAT[24]/I");
 
       // digi variable branches
       outputtree.Branch("digiChamber", &vecDigiChamber);
@@ -302,8 +313,10 @@ class GEMUnpacker {
               vecDigiChamber.clear();
               vecDigiDirection.clear();
               vecDigiStrip.clear();
-
+              
               eventVecL1A.clear();
+              for(int k=0; k<24; k++) hitsPerVFAT[k] = 0;
+              if (verbose) std::cout<<"hitsPerVFAT[0]"<<"\t"<<hitsPerVFAT[0]<<std::endl;
 
               if (verbose) {
                   std::cout << "Event " << n_evt << std::endl;
@@ -320,6 +333,14 @@ class GEMUnpacker {
                   std::cout << "Found mismatching L1As in event " << n_evt << ", stopping..." << std::endl;
                   break;
               }
+              if(verbose)
+                  {
+                      std::cout<<"PulseStretch\t"<<pulse_stretch<<std::endl;
+                      std::cout<<"Latency"<<"\t"<<latency<<"\t{";
+                      for (int i: vecVfat)
+                          std::cout << i << ",";
+                      std::cout<<"}"<<std::endl;
+                  }
               outputtree.Fill();
 
           }
@@ -328,11 +349,12 @@ class GEMUnpacker {
       hfile->Write();
       return unpackerStatus;
     }
-    
+
+
 
 private:
     int readStatus = 0;
-    
+    int hitsPerVFAT[24];    
     /* branch and support variables: */
     int nhits;
     int latency;
@@ -372,14 +394,14 @@ private:
 
     std::map<int, StripMapping*> stripMappings;
     ChamberMapping *chamberMapping;
-    bool verbose=false, checkSyncronization=false;
+    bool verbose=false, checkSyncronization=false, isAMC13=false;
 };
  
 int main (int argc, char** argv) {
   std::cout << "Running GEM unpacker..." << std::endl;
   if (argc<3) 
   {
-    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--geometry geometryname] [--format ferol/sdram] [--verbose] [--check-sync]" << std::endl;
+    std::cout << "Usage: RawToDigi ifile(s) ofile [--events max_events] [--geometry geometryname] [--format ferol/sdram] [--verbose] [--check-sync] [--isAMC13]" << std::endl;
     return 0;
   }
   std::vector<std::string> ifiles;
@@ -390,6 +412,7 @@ int main (int argc, char** argv) {
   std::string geometry = "IntegrationStand";
   bool verbose = false;
   bool checkSyncronization = false;
+  bool isAMC13 = false;
   bool isUnnamed = true;
   for (int iarg=1; iarg<argc; iarg++) {
     std::string arg = argv[iarg];
@@ -397,6 +420,7 @@ int main (int argc, char** argv) {
       isUnnamed = false; // end of unnamed parameters
       if (arg=="--verbose") verbose = true;
       else if (arg=="--check-sync") checkSyncronization = true;
+      if (arg=="--isAMC13") isAMC13 = true;
       else if (arg=="--events") max_events = atoi(argv[iarg+1]);
       else if (arg=="--geometry") geometry = argv[iarg+1];
     } else if (isUnnamed) { // unnamed parameters

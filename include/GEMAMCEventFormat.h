@@ -291,8 +291,6 @@ class AMCEvent
       uint8_t m_isExtTrig;
       uint8_t m_isCurrentPulse;
       uint8_t m_CFG_CAL_DAC;
-      uint8_t m_PULSE_STRETCH;
-      uint16_t m_Latency;
       //uint8_t m_Param1;       ///<Run param1:8 
       //uint8_t m_Param2;       ///<Run param2:8
       //uint16_t m_Param3;       ///<Run param3:8 //GC : messo a 16
@@ -324,12 +322,15 @@ class AMCEvent
       //!(7 zeroes):7   OOS GLIB:1   
       /*!GLIB is out-of-sync (critical): L1A ID is different for different chambers in this event.*/
       uint8_t  m_OOSG;
+      uint16_t m_Latency;
+      uint8_t m_PULSE_STRETCH;
 
     //AMC_trailer
 
       uint32_t m_CRC;
       uint8_t m_L1AT;
       uint32_t m_DlengthT;
+
 	
   public:
     //!Empty constructor. Functions fill the data members.
@@ -402,9 +403,8 @@ class AMCEvent
       m_isExtTrig = 0x1 & (word >> 54);
       m_isCurrentPulse = 0x1 & (word >> 53);
       m_CFG_CAL_DAC = 0xff & (word >> 45);
-      m_PULSE_STRETCH = (int) (0x07 & (word >> 42));/* 3 bit */
+      //m_PULSE_STRETCH = (int) (0x07 & (word >> 42));/* 3 bit */
       //std::cout << "ps " << (0x07 & (word >> 42)) << std::endl;
-      m_Latency = 0x03ff & (word >> 32); //word >> 32;          /*!Run Param 3 */
       m_Onum = word >> 16;            /*!Orbit Number */
       m_BID = word;                   /*!Board ID */
       //std::cout << "OC " << m_Onum << std::endl;
@@ -430,6 +430,8 @@ class AMCEvent
     {
       m_ChamT = 0x00ffffff & (word >> 40);  /*!Chamber Timeout*/
       m_OOSG = 0b00000001 & (word >> 39);   /*!OOS GLIB*/
+      m_Latency = 0x03ff & (word >> 8);  //
+      m_PULSE_STRETCH = 0x7 & (word >> 18);
     }
 
     //!Reads the word for the AMC Trailer
