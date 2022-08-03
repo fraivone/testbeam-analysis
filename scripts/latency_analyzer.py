@@ -8,6 +8,7 @@ import numpy as np
 import awkward as ak
 import matplotlib.pyplot as plt
 import time
+import shutil
 
 
 ROOT.gROOT.SetBatch(True)
@@ -24,12 +25,14 @@ parser.add_argument("-v", "--verbose", action="store_true", help="Activate loggi
 parser.add_argument("-n", "--events", type=int, default=-1, help="Number of events to analyse")
 
 args = parser.parse_args()
-timestamp = time.strftime("%-y%m%d_%H%M")
-
+inputfile=str(args.ifile)
+timestamp = inputfile.split(".root")[-2].split("/")[-1] if "run" in inputfile else time.strftime("%-y%m%d_%H%M")
+outdir = args.odir / timestamp 
 
 
 def main():
-    os.makedirs(args.odir, exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
+    shutil.copyfile("/eos/user/f/fivone/www/index.php", outdir / "index.php")
     
     with uproot.open(args.ifile) as _file:
         tree = _file["outputtree"]
@@ -44,7 +47,8 @@ def main():
         Chambers = tree["digiChamber"].array(entry_stop=args.events)
         etas = tree["digiEta"].array(entry_stop=args.events)
         strips = tree["digiStrip"].array(entry_stop=args.events)
-        
+        n_triggers = len(latencies)
+
 
         unique_latencies = np.unique(latencies)
         unique_slots = np.unique(ak.flatten(slots))
@@ -63,47 +67,87 @@ def main():
         print(f"Found {unique_etas} unique etas")
         print(f"Found {unique_VFATs} unique VFATs")
         print(f"Found {unique_strips} unique strips")
+        print(f"Found {n_triggers} events")
         print()
-
-    eta_to_vfat = {}
-    for oh in unique_OHs:
-        eta_to_vfat.setdefault(oh,{})
-        for eta in unique_etas:
-            mask = (OHs==oh)&(etas==eta)
-            vfat_in_eta = VFATs[mask]
-            eta_to_vfat[oh][eta] = list(np.unique(ak.flatten(vfat_in_eta)))
 
 
 
     #Plotting latency with ROOT
     latency_dict = {}
+    latency2D_dict = {}
 
     infile=ROOT.TFile(str(args.ifile),"READ")
     tree = infile.Get("outputtree")
     nvfats = len(unique_VFATs)
     nrows = 3
     ncols = int(np.ceil(nvfats/nrows))
-    c1 = ROOT.TCanvas("c1","c1",2000,2000)
+    c1 = ROOT.TCanvas("VFAT_latency","VFAT_latency",2000,2000)
+    c1_2D = ROOT.TCanvas("strip_latency","strip_latency",2000,2000)
     c2 = ROOT.TCanvas("occupancy","occupancy",2000,2000)
-    c1.Divide(nrows,ncols)
-    c2.Divide(1,len(unique_etas))
     
+    c1.Divide(nrows,ncols)
+    c1_2D.Divide(1,len(unique_etas))
+
+    c2.Divide(1,2)
+    
+    
+    all_latency = ROOT.TH1F("lat_distr","lat_distr",max(unique_latencies)+1,0,max(unique_latencies))
+    all_latency.GetXaxis().SetTitle("Latency (BX)")
+    all_PS = ROOT.TH1F("PulseStr_dist","PulseStr_dist",10,0,10)
+    all_PS.GetXaxis().SetTitle("PulseStretch (BX)")
+
+    tree.Draw(f"latency >> lat_distr","","goff")
+    tree.Draw(f"pulse_stretch >> PulseStr_dist","","goff")
+
+    c2.cd(1)
+    all_latency.Draw("HIST")
+    c2.cd(2)
+    all_PS.Draw("HIST")
+    c2.Modified()
+    c2.Update()
+    
+    c2.SaveAs(str(outdir)+f"/RunParamDistr_"+timestamp+".png")
+    c2.SaveAs(str(outdir)+f"/RunParamDistr_"+timestamp+".pdf")
+
+
+
     for oh in unique_OHs:
         for idx,v in enumerate(unique_VFATs):
             hist_lat_name = "latScan_VFAT"+str(v)
-            latency_dict[v]=ROOT.TH1F(hist_lat_name,hist_lat_name,120,0,120)
+            latency_dict[v]=ROOT.TH1F(hist_lat_name,hist_lat_name,max(unique_latencies)+1,0,max(unique_latencies))
+
             latency_dict[v].GetXaxis().SetTitle("Latency (BX)")
             latency_dict[v].GetYaxis().SetTitle("hits")
                     
             c1.cd(idx+1)
-            tree.Draw(f"latency >> {hist_lat_name}","VFAT=="+str(v))
+            tree.Draw(f"latency >> {hist_lat_name}","hitspervfat["+str(v)+"]>0","goff")
+            latency_dict[v].Divide(all_latency) ## Normalize by number of triggers per latency 
+            latency_dict[v].Draw("HIST")
+        for idx,e in enumerate(unique_etas):
+
+            hist2D_lat_name = "stripLatency_eta"+str(e)
+            latency2D_dict[e]=ROOT.TH2F(hist2D_lat_name,hist2D_lat_name,256,128,384,max(unique_latencies),0,max(unique_latencies))
+
+            c1_2D.cd(idx+1)
+            tree.Draw(f"latency:digiStrip>>{hist2D_lat_name}","digiEta=="+str(e),"goff") 
+            latency2D_dict[e].GetYaxis().SetTitle("Latency (BX)")
+            latency2D_dict[e].GetXaxis().SetTitle("Strip")
+            latency2D_dict[e].SetStats(0)
+            latency2D_dict[e].Draw("COLZ")
                     
 
     c1.Modified()
     c1.Update()
+    c1_2D.Modified()
+    c1_2D.Update()
+    c1.SaveAs(str(outdir)+f"/OH{oh}_latency_"+timestamp+".png")
+    c1.SaveAs(str(outdir)+f"/OH{oh}_latency_"+timestamp+".pdf")
 
-    c1.SaveAs(str(args.odir)+f"/OH{oh}_latency_"+timestamp+".png")
-    c1.SaveAs(str(args.odir)+f"/OH{oh}_latency_"+timestamp+".pdf")
+    c1_2D.SaveAs(str(outdir)+f"/OH{oh}_latency2D_"+timestamp+".png")
+    c1_2D.SaveAs(str(outdir)+f"/OH{oh}_latency2D_"+timestamp+".pdf")
+
+
+    
 
             # #Plotting latency with pyplot
             # slot=7

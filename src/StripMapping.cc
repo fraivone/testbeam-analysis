@@ -29,22 +29,19 @@ StripMapping::StripMapping(std::string mappingFilePath) {
 		eta = std::stoi(mappingDataFrame.getElement("iEta", irow));
 		strip = std::stoi(mappingDataFrame.getElement("strip", irow));
 
-		to_eta[vfatId] = eta;
+		to_eta[vfatId][vfatChannel] = eta;
 		to_strip[vfatId][vfatChannel] = strip;
 	}
 }
 
 void StripMapping::print() {
 	std::cout << "Eta mapping" << std::endl;
-    std::cout << "vfat\teta" << std::endl;
-	for (int vfat=0; vfat<12; vfat++) std::cout << vfat << "\t" << to_eta[vfat] << std::endl;
-	std::cout << std::endl;
 
 	std::cout << "Strip mapping" << std::endl;
-    std::cout << "vfat\tchannel\tstrip" << std::endl;
+    std::cout << "vfat\tchannel\tiEta\tstrip" << std::endl;
 	for (int i=0; i<12; i++) {
 		for (int j=0; j<128; j++)
-            std::cout << i << "\t" << j << "\t" << to_strip[i][j] << std::endl;
+            std::cout << i << "\t" << j << "\t" << to_strip[i][j] << "\t" << to_eta[i][j] << std::endl;
 	}
 	std::cout << std::endl;
 }
